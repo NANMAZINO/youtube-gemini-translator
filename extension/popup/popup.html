@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube AI Translator</title>
+    <link rel="stylesheet" href="popup.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- 헤더 -->
+      <header class="header">
+        <h1>🤖 AI Translator</h1>
+        <span class="version">v1.0.0</span>
+      </header>
+
+      <!-- API Key 섹션 -->
+      <section class="section">
+        <label class="label">
+          Gemini API Key
+          <span
+            class="info-icon"
+            data-tooltip="API Key는 브라우저 로컬 스토리지에 저장되며, 외부 서버로 전송되지 않습니다."
+            >ℹ️</span
+          >
+        </label>
+        <div class="input-group">
+          <input
+            type="password"
+            id="apiKey"
+            placeholder="AI Studio에서 키 발급..."
+            class="input"
+          />
+          <button id="toggleVisibility" class="btn-icon" title="보기/숨기기">
+            👁️
+          </button>
+        </div>
+        <div class="button-row">
+          <button id="saveKey" class="btn btn-primary">저장</button>
+          <button id="clearKey" class="btn btn-danger">삭제</button>
+        </div>
+        <p class="hint">
+          <a href="https://aistudio.google.com/apikey" target="_blank">
+            Google AI Studio</a
+          >에서 API Key를 발급받으세요
+        </p>
+      </section>
+
+      <section class="section">
+        <label class="label">
+          추론 레벨 (Thinking Level)
+          <span
+            class="info-icon"
+            data-tooltip="대부분의 영상은 Minimal로 충분합니다. 품질이 아쉽다면 Low를 사용해보세요."
+            >ℹ️</span
+          >
+        </label>
+        <select id="thinkingLevel" class="select">
+          <option value="minimal">Minimal</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+        </select>
+        <p class="hint">Gemini 3 Flash의 사고 깊이를 조절합니다</p>
+      </section>
+
+      <!-- 언어 설정 -->
+      <section class="section">
+        <label class="label">언어 설정</label>
+        <div class="lang-setting">
+          <div class="lang-row">
+            <span class="lang-label">From:</span>
+            <select id="sourceLang" class="select">
+              <option value="Auto">자동 감지 (Auto)</option>
+              <option value="한국어">한국어</option>
+              <option value="English">English</option>
+              <option value="日本語">日本語</option>
+            </select>
+          </div>
+          <div class="lang-row">
+            <span class="lang-label">To:</span>
+            <select id="targetLang" class="select">
+              <option value="한국어">한국어</option>
+              <option value="English">English</option>
+              <option value="日本語">日本語</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 사용량 통계 -->
+      <section class="section">
+        <label class="label">
+          토큰 사용량
+          <span
+            class="info-icon"
+            data-tooltip="이 수치는 추정치이며, 실제 요금과 다를 수 있습니다. 정확한 사용량은 Google AI Studio에서 확인하세요."
+            >ℹ️</span
+          >
+        </label>
+        <div class="usage-tabs">
+          <button class="usage-tab active" data-tab="today">오늘</button>
+          <button class="usage-tab" data-tab="monthly">30일</button>
+        </div>
+        <div class="stats">
+          <div class="stat-item">
+            <span class="stat-label">입력</span>
+            <span class="stat-value" id="inputTokens">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">출력</span>
+            <span class="stat-value" id="outputTokens">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">총합</span>
+            <span class="stat-value" id="totalTokens">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">예상 금액</span>
+            <span class="stat-value" id="estimatedCost">$0.000</span>
+          </div>
+        </div>
+        <p class="hint">Gemini 3 Flash: 입력 $0.50/1M, 출력 $3.00/1M</p>
+      </section>
+
+      <!-- 캐시 관리 -->
+      <section class="section">
+        <label class="label">
+          캐시 관리
+          <span
+            class="info-icon"
+            data-tooltip="번역 데이터는 30일 후 자동으로 삭제됩니다. 사용 환경에 따라 최대 100개까지 보관됩니다."
+            >ℹ️</span
+          >
+        </label>
+        <div class="cache-info mb-8">
+          <span
+            >저장된 번역: <strong id="cacheCount">0</strong>개 (<span
+              id="cacheSize"
+              >0 KB</span
+            >)</span
+          >
+          <button id="clearCache" class="btn btn-secondary">전체 삭제</button>
+        </div>
+
+        <!-- 캐시 목록 -->
+        <div id="cacheList" class="cache-list">
+          <!-- 목록 항목들이 여기에 동적으로 삽입됨 -->
+          <p class="empty-msg">저장된 번역 내역이 없습니다.</p>
+        </div>
+      </section>
+
+      <!-- 상태 메시지 -->
+      <div id="status" class="status hidden"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

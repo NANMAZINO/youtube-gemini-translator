@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube AI Translator",
+  "description": "Gemini Flash 기반 YouTube 자막 전체 문맥 번역",
+  "version": "1.0.0",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "YouTube AI Translator"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["content/*.js", "lib/*.js"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ]
+}

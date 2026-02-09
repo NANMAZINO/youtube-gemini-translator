@@ -1,0 +1,19 @@
+/* YouTube AI Translator - Content Styles */
+
+/* 번역 버튼 기본 스타일 */
+.yt-ai-translate-button {
+  font-family: 'YouTube Sans', 'Roboto', sans-serif;
+  user-select: none;
+}
+
+.yt-ai-translate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 알림 스타일 */
+.yt-ai-notification {
+  font-family: 'YouTube Sans', 'Roboto', sans-serif;
+  max-width: 300px;
+  word-wrap: break-word;
+}
