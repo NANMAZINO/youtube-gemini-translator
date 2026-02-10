@@ -128,11 +128,13 @@ function createVideoOverlay(videoPlayer) {
       border-color: transparent;
     }
     .overlay-hint {
-      position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 6px;
-      font-size: 12px; white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+      position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%) translateY(10px);
+      background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      opacity: 0; transition: opacity 0.5s, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3); pointer-events: none;
     }
-    .overlay-hint.show { opacity: 1; }
+    .overlay-hint.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   `;
   shadow.appendChild(style);
 
@@ -145,15 +147,20 @@ function createVideoOverlay(videoPlayer) {
   setupFontSizeControl(host, content);
   videoPlayer.appendChild(host);
 
-  // 오버레이 안내 툴팁 (최초 1회만)
-  chrome.storage.local.get(['overlayHintShown'], (res) => {
-    if (!res.overlayHintShown) {
+  // 오버레이 안내 툴팁 (처음 3회까지 표시)
+  chrome.storage.local.get(['overlayHintCount'], (res) => {
+    const count = res.overlayHintCount || 0;
+    if (count < 3) {
       const hint = document.createElement('div');
       hint.className = 'overlay-hint';
-      hint.textContent = '휠로 크기 조절, 드래그로 이동';
+      hint.textContent = '🖱️ 휠로 크기 조절 · 드래그로 이동 · 더블클릭으로 초기화';
       shadow.appendChild(hint);
-      setTimeout(() => hint.classList.add('show'), 500);
-      setTimeout(() => { hint.classList.remove('show'); chrome.storage.local.set({ overlayHintShown: true }); }, 4000);
+      setTimeout(() => hint.classList.add('show'), 800);
+      setTimeout(() => {
+        hint.classList.remove('show');
+        chrome.storage.local.set({ overlayHintCount: count + 1 });
+        setTimeout(() => hint.remove(), 500);
+      }, 6000);
     }
   });
 }
@@ -257,6 +264,8 @@ function injectStyles(shadow) {
     :host { display: block; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 16px; margin: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); overflow: hidden; font-family: 'Inter', system-ui, sans-serif; }
     @media (prefers-color-scheme: dark) { :host { background: rgba(30, 30, 30, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); color: #eee; } }
     .header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.05); background: rgba(255, 255, 255, 0.5); font-weight: 600; }
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+    .header-hint { font-size: 11px; font-weight: 400; opacity: 0.5; }
     .translation-container { padding: 8px; max-height: 500px; overflow-y: auto; scrollbar-width: thin; scroll-behavior: smooth; }
     .translation-item { display: flex; gap: 16px; padding: 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); margin-bottom: 4px; }
     .translation-item:hover { background: rgba(6, 95, 212, 0.1); }
@@ -275,8 +284,17 @@ function createLayout(host, originalContainer) {
   const header = document.createElement('div');
   header.className = 'header';
   
+  const headerLeft = document.createElement('div');
+  headerLeft.className = 'header-left';
+
   const title = document.createElement('span');
   title.textContent = '🤖 AI 번역 스크립트';
+
+  const hint = document.createElement('span');
+  hint.className = 'header-hint';
+  hint.textContent = '🖱️ 휠로 자막 오버레이 글자 크기 조절';
+
+  headerLeft.append(title, hint);
   
   const controls = document.createElement('div');
   controls.className = 'controls';
@@ -301,10 +319,11 @@ function createLayout(host, originalContainer) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-btn';
   closeBtn.textContent = '✕';
-  closeBtn.onclick = () => { host.remove(); originalContainer.style.display = 'block'; };
-  
+  closeBtn.title = '번역창 닫기';
+  closeBtn.onclick = () => clearUI();
+
   controls.append(exportBtn, syncBtn, closeBtn);
-  header.append(title, controls);
+  header.append(headerLeft, controls);
 
   const container = document.createElement('div');
   container.className = 'translation-container';
@@ -353,29 +372,62 @@ function setupTimeSync(shadow) {
   if (timeSyncAbortController) timeSyncAbortController.abort();
   timeSyncAbortController = new AbortController();
 
+  // 아이템 배열 캐싱 (DOM 쿼리 최소화)
+  let cachedItems = [];
+  let cachedStarts = [];
+
+  const refreshCache = () => {
+    cachedItems = Array.from(shadow.querySelectorAll('.translation-item'));
+    cachedStarts = cachedItems.map(el => parseFloat(el.dataset.start));
+  };
+
+  // MutationObserver로 아이템 변경 시에만 캐시 갱신
+  const container = shadow.getElementById('streaming-content');
+  const observer = new MutationObserver(refreshCache);
+  if (container) observer.observe(container, { childList: true });
+  refreshCache();
+
+  // 이진 탐색으로 현재 활성 아이템 찾기
+  const findActiveIndex = (currentTime) => {
+    let lo = 0, hi = cachedStarts.length - 1, result = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      if (cachedStarts[mid] <= currentTime) {
+        result = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return result;
+  };
+
+  let lastActiveIndex = -1;
+
   video.addEventListener('timeupdate', () => {
-    const currentTime = video.currentTime;
-    const items = Array.from(shadow.querySelectorAll('.translation-item'));
-    
-    let activeIndex = -1;
-    for (let i = 0; i < items.length; i++) {
-        const start = parseFloat(items[i].dataset.start);
-        const next = items[i+1] ? parseFloat(items[i+1].dataset.start) : Infinity;
-        if (currentTime >= start && currentTime < next) { activeIndex = i; break; }
+    if (cachedItems.length === 0) return;
+
+    const activeIndex = findActiveIndex(video.currentTime);
+    if (activeIndex === lastActiveIndex) return;
+
+    // 이전 활성 아이템 비활성화
+    if (lastActiveIndex >= 0 && lastActiveIndex < cachedItems.length) {
+      cachedItems[lastActiveIndex].classList.remove('active');
     }
 
-    items.forEach((item, idx) => {
-      if (idx === activeIndex) {
-        if (!item.classList.contains('active')) {
-          item.classList.add('active');
-          updateOverlayText(item.querySelector('.text').textContent);
-          if (isAutoScrollEnabled) scrollToActive(shadow);
-        }
-      } else { item.classList.remove('active'); }
-    });
+    lastActiveIndex = activeIndex;
 
-    if (activeIndex === -1) updateOverlayText('');
+    if (activeIndex >= 0) {
+      cachedItems[activeIndex].classList.add('active');
+      updateOverlayText(cachedItems[activeIndex].querySelector('.text').textContent);
+      if (isAutoScrollEnabled) scrollToActive(shadow);
+    } else {
+      updateOverlayText('');
+    }
   }, { signal: timeSyncAbortController.signal });
+
+  // AbortController 시 observer도 정리
+  timeSyncAbortController.signal.addEventListener('abort', () => observer.disconnect());
 }
 
 function scrollToActive(shadow) {
@@ -415,12 +467,24 @@ export function showNotification(message, type = 'info') {
   const colors = { success: '#2e7d32', error: '#c62828', info: '#1565c0' };
   const notification = document.createElement('div');
   Object.assign(notification.style, {
-    position: 'fixed', top: '80px', right: '20px', padding: '12px 20px',
-    backgroundColor: colors[type] || colors.info, color: 'white', borderRadius: '8px', zIndex: '9999'
+    position: 'fixed', top: '-60px', right: '20px', padding: '14px 24px',
+    backgroundColor: colors[type] || colors.info, color: 'white', borderRadius: '12px', zIndex: '9999',
+    fontWeight: '500', fontSize: '14px', fontFamily: "'Inter', system-ui, sans-serif",
+    boxShadow: '0 4px 20px rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)',
+    transition: 'top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s'
   });
   notification.textContent = message;
   document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 3000);
+
+  // 슬라이드인
+  requestAnimationFrame(() => { notification.style.top = '20px'; });
+
+  // 페이드아웃 후 제거
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.top = '-60px';
+    setTimeout(() => notification.remove(), 400);
+  }, 3000);
 }
 
 
@@ -446,58 +510,6 @@ export function setExportData(data, videoId) {
       URL.revokeObjectURL(url);
       showNotification('JSON 내보내기 완료', 'success');
     };
-  }
-}
-
-
-/**
- * 진행률 Toast 표시
- */
-export function showProgressToast(current, total, customMsg = null) {
-  const TOAST_ID = 'yt-ai-progress-toast';
-  let toast = document.getElementById(TOAST_ID);
-  
-  // 강제 숨김 처리
-  if (customMsg === 'HIDE') {
-    if (toastTimer) {
-      clearTimeout(toastTimer);
-      toastTimer = null;
-    }
-    if (toast) toast.remove();
-    return;
-  }
-
-  // 기존 예약된 제거 작업이 있다면 취소
-  if (toastTimer) {
-    clearTimeout(toastTimer);
-    toastTimer = null;
-  }
-  
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = TOAST_ID;
-    Object.assign(toast.style, {
-      position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-      padding: '12px 24px', background: 'linear-gradient(135deg, #065fd4, #00a0ff)',
-      color: 'white', borderRadius: '24px', zIndex: '9999', fontWeight: '500',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)', transition: 'opacity 0.3s'
-    });
-    document.body.appendChild(toast);
-  }
-  
-  const percent = Math.round((current / total) * 100);
-  toast.textContent = customMsg || `🔄 번역 중... ${percent}% (${current}/${total})`;
-  toast.style.opacity = '1';
-  
-  // 완료 시 제거 (단, 재시도 중인 customMsg가 아닐 때만)
-  if (current >= total && !customMsg) {
-    toastTimer = setTimeout(() => {
-      toast.style.opacity = '0';
-      toastTimer = setTimeout(() => {
-        if (toast.parentElement) toast.remove();
-        toastTimer = null;
-      }, 300);
-    }, 1500); // 1.5초 후 제거 시작
   }
 }
 

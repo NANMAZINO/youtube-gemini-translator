@@ -22,7 +22,10 @@ export async function extractCaptions() {
       return { start: timestamp, text };
     }).filter(s => s.text);
 
-    return groupSegmentsBySentence(rawSegments);
+    return {
+      raw: rawSegments,
+      grouped: groupSegmentsBySentence(rawSegments)
+    };
   } catch (error) {
     console.error('[Captions] Extraction failed:', error);
     return null;

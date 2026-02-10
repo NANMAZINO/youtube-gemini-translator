@@ -1,53 +1,166 @@
-# YouTube AI Translator
+# 🤖 YouTube AI Translator
 
-Gemini 3 Flash 기반 YouTube 자막 전체 문맥 번역 Chrome 확장 프로그램
+> Gemini 3 Flash 기반 YouTube 자막 **문맥 번역** Chrome 확장 프로그램
 
-## 설치 방법
+YouTube 영상의 자막(스크립트)을 Gemini AI가 문맥을 이해하며 번역하고,  
+영상 위에 실시간 자막 오버레이로 보여줍니다
 
-1. 이 저장소를 다운로드 또는 클론합니다.
-2. Chrome 브라우저에서 `chrome://extensions`에 접속합니다.
-3. 우측 상단의 **개발자 모드**를 활성화합니다.
-4. **압축해제된 확장 프로그램을 로드합니다**를 클릭하여 `extension` 폴더를 선택합니다.
+---
 
-## 사용 방법
+## ✨ 주요 기능
 
-기타 설정들은 확장 프로그램 아이콘을(팝업)을 클릭하여 설정할 수 있습니다.
+| 기능                | 설명                                                     |
+| ------------------- | -------------------------------------------------------- |
+| **AI 문맥 번역**    | 단순 직역이 아닌, 전후 문맥을 고려한 자연스러운 번역     |
+| **실시간 오버레이** | 영상 위에 번역 자막이 타임스탬프에 맞춰 표시             |
+| **스트리밍 번역**   | 긴 영상도 청크 단위로 실시간 번역 진행                   |
+| **추론 레벨 조절**  | Gemini의 사고 깊이를 Minimal~High로 설정 가능            |
+| **번역 캐시**       | IndexedDB에 번역 결과 자동 저장 (최대 100개 / 30일 보관) |
+| **다국어 지원**     | 한국어 · English · 日本語 간 번역, 원본 언어 자동 감지   |
+| **토큰 사용량**     | 일별 · 월별 토큰 소모량 및 예상 비용 확인                |
 
-### 1. API Key 설정
+---
 
-1. [Google AI Studio](https://aistudio.google.com/apikey)에서 API Key를 발급받습니다.
-2. 확장 프로그램 아이콘(팝업)을 클릭하여 API Key를 입력하고 저장합니다.
+## 📋 사전 준비
 
-### 2. 번역 실행
+### Gemini API Key 발급
 
-1. YouTube 영상 페이지에 접속합니다.
-2. 영상 하단의 **...더보기**(영상 설명)를 클릭한 후, 하단의 **스크립트 표시** 버튼을 클릭하여 자막 패널을 엽니다.
-3. 자막 패널 상단에 나타나는 **🤖 AI 번역** 버튼을 클릭합니다.
-4. 번역 결과는 영상 위에 오버레이로 실시간 표시됩니다.
+1. **[Google AI Studio](https://aistudio.google.com/apikey)** 에 접속합니다
+2. Google 계정으로 로그인합니다
+3. **"Create API Key"** 버튼을 클릭합니다
+4. 생성된 API Key를 복사해 둡니다
 
-## 제한사항
+> [!NOTE]
+> API Key는 브라우저 로컬 스토리지에만 저장되며, 외부 서버로 전송되지 않습니다  
+> 무료 티어에서도 분당 요청 제한 내에서 사용 가능합니다
 
-- 자막(Script) 데이터가 제공되지 않는 영상은 번역이 불가능합니다.
-- 한 번에 하나의 번역만 가능합니다.
+---
 
-## 파일 구조
+## 🚀 설치 방법
+
+### 1. 소스 코드 다운로드
+
+**방법 A — ZIP 다운로드**
+
+1. GitHub 저장소 페이지에서 **Code → Download ZIP** 클릭
+2. 다운로드된 ZIP 파일을 원하는 위치에 압축 해제
+
+**방법 B — Git Clone**
+
+```bash
+git clone https://github.com/<your-repo>/yg-translator.git
+```
+
+### 2. Chrome에 확장 프로그램 등록
+
+1. Chrome 주소창에 `chrome://extensions` 입력 후 이동 또는 "확장앱 관리" 이동
+2. 우측 상단 **"개발자 모드"** 토글을 **ON**으로 변경
+3. **"압축해제된 확장 프로그램을 로드합니다"** 버튼 클릭
+4. 다운로드한 폴더 안의 **`extension`** 폴더를 선택
+5. 확장 프로그램 목록에 **"YouTube AI Translator"** 가 나타나면 설치 완료
+
+> [!TIP]
+> Chrome 상단 퍼즐 아이콘(🧩)을 클릭 → YouTube AI Translator 옆 📌 핀 고정하면  
+> 툴바에서 바로 접근할 수 있습니다
+
+---
+
+## 📖 사용 방법
+
+### Step 1 — API Key 등록
+
+1. Chrome 툴바에서 **확장 프로그램 아이콘**을 클릭하여 팝업을 엽니다
+2. **Gemini API Key** 입력창에 복사해둔 API Key를 붙여넣기 합니다
+3. **"저장"** 버튼을 클릭합니다
+
+### Step 2 — YouTube 자막 패널 열기
+
+1. 번역할 YouTube 영상 페이지로 이동합니다
+2. 영상 아래 **"...더보기"** 를 클릭하여 영상 설명을 펼칩니다
+3. 설명 하단의 **"스크립트 표시"** 버튼을 클릭합니다
+4. 영상 오른쪽에 자막(스크립트) 패널이 열립니다
+
+> [!IMPORTANT]
+> 자막 패널이 열려 있어야 번역 버튼이 나타납니다  
+> 자막이 없는 영상(자동 생성 자막도 없는 경우)은 번역할 수 없습니다
+
+### Step 3 — 번역 실행
+
+1. 자막 패널 상단에 나타나는 **"🤖 AI 번역"** 버튼을 클릭합니다
+2. 번역이 청크 단위로 진행되며, 진행률이 표시됩니다
+3. 번역된 자막이 **영상 위에 오버레이**로 실시간 표시됩니다
+4. 완료 후 동일 영상 재방문 시 **캐시된 번역이 자동 적용**됩니다
+
+### Step 4 — 설정 변경 (선택)
+
+팝업에서 아래 옵션을 조정할 수 있습니다:
+
+| 설정                 | 기본값    | 설명                                               |
+| -------------------- | --------- | -------------------------------------------------- |
+| **추론 레벨**        | Minimal   | Gemini의 사고 깊이 (Minimal → Low → Medium → High) |
+| **원본 언어 (From)** | 자동 감지 | 원본 자막의 언어를 지정하거나 자동 감지            |
+| **번역 언어 (To)**   | 한국어    | 번역 결과 언어 선택                                |
+
+> [!TIP]
+> 대부분의 영상은 추론 레벨 **Minimal**로 충분합니다  
+> 전문적·기술적 내용의 영상은 **Medium** 이상으로 올리면 품질이 향상됩니다
+
+---
+
+## ⚠️ 제한사항
+
+- 자막(Script) 데이터가 없는 영상은 번역할 수 없습니다
+- 한 번에 하나의 영상만 번역 가능합니다
+- Gemini API 무료 티어의 분당 요청 제한이 적용됩니다
+
+---
+
+## 💰 비용 안내
+
+이 확장 프로그램은 Google의 **Gemini 3 Flash** 모델을 사용합니다
+
+| 항목      | 단가              |
+| --------- | ----------------- |
+| 입력 토큰 | $0.50 / 1M tokens |
+| 출력 토큰 | $3.00 / 1M tokens |
+
+- 팝업의 **토큰 사용량** 섹션에서 일별 · 30일 누적 사용량 및 예상 비용을 확인할 수 있습니다
+- 정확한 사용량은 [Google AI Studio](https://aistudio.google.com/)에서 확인하세요
+
+---
+
+## 🗂 파일 구조
 
 ```
 extension/
-├── manifest.json      # 확장 프로그램 설정 (V3)
-├── background.js      # Gemini API 통신 및 메시지 라우팅
-├── content.js         # 모듈 시스템 초기화 및 로더
-├── content.css        # 기본 콘텐츠 스타일
-├── lib/               # 공통 라이브러리 모듈
-│   └── gemini.js      # Gemini 3 Flash API 통신 엔진
-├── content/           # 기능별 콘텐츠 스크립트
-│   ├── main.js        # 메인 컨트롤러 및 이벤트 리스너
-│   ├── ui.js          # Shadow DOM 기반 UI 생성 및 렌더링
-│   ├── captions.js    # 자막 추출 및 전처리 로직
-│   ├── cache.js       # IndexedDB 캐시 레이어
-│   └── utils.js       # 유틸리티 함수
-└── popup/             # 확장 프로그램 팝업 UI
+├── manifest.json          # Chrome 확장 프로그램 설정 (Manifest V3)
+├── background.js          # Gemini API 통신 및 메시지 라우팅
+├── content.js             # 모듈 시스템 초기화 로더
+├── content.css            # 기본 콘텐츠 스타일
+├── icons/
+│   └── icon.svg           # 확장 프로그램 아이콘
+├── lib/                   # 공통 라이브러리 모듈
+│   ├── gemini.js          # Gemini 3 Flash 번역 API 통신
+│   ├── gemini-refiner.js  # 번역본 정밀 재분할(Alignment) 모듈
+│   ├── cache.js           # IndexedDB 기반 번역 캐시 관리
+│   └── storage.js         # API Key · 토큰 사용량 저장소
+├── content/               # 기능별 콘텐츠 스크립트
+│   ├── main.js            # 메인 컨트롤러 및 이벤트 리스너
+│   ├── ui.js              # Shadow DOM 기반 UI 렌더링
+│   ├── captions.js        # 자막 추출 및 전처리
+│   └── utils.js           # 유틸리티 함수
+└── popup/                 # 확장 프로그램 팝업 UI
     ├── popup.html
     ├── popup.js
     └── popup.css
 ```
+
+---
+
+## 🛠 기술 스택
+
+- **Chrome Extension Manifest V3**
+- **Gemini 3 Flash** (generativelanguage.googleapis.com)
+- **Shadow DOM** — 호스트 페이지와 격리된 UI
+- **IndexedDB** — 번역 캐시 영구 저장
+- **Vanilla JavaScript** — 프레임워크 의존 없음

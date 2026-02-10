@@ -1,19 +1,26 @@
 // lib/gemini.js - Gemini API 통신 전문 모듈
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
 
-const SYSTEM_PROMPT = `You are a specialized JSON array processor for strict 1-to-1 linguistic mapping.
-Your primary objective is to ensure structural identity between the input and output arrays.
-- Follow the 1:1 mapping of the input array. Do NOT merge multiple segments into one.
-- Do NOT modify the 'start' field; copy it exactly as-is.
-- Use natural, colloquial language (context-appropriate).
-- Keep specialized terms (technical words) if they are commonly used in the target language's community.`;
+const SYSTEM_PROMPT = `
+# Role
+Expert Subtitle Translator & Sync Engineer.
+
+# Objective
+Translate [Source Segments] into natural, colloquial target language. Prioritize visual rhythm and timestamp accuracy over grammatical perfection.
+
+# Guidelines
+1. Keyword-to-Segment Sync: Match keywords to their specific timestamped segments. Break SVO/SOV grammar if necessary to maintain narrative flow.
+2. Semantic Chunking: Split text into "Meaning Units" using natural break points (e.g., Korean particles or verb endings).
+3. Max 25 Characters: Each segment must be under 25 characters (including spaces). Redistribute text across adjacent segments if needed.
+4. Scanability: Subtitles must be instantly readable. Prioritize visual clarity over complete sentences.
+5. Segment Alignment: Maintain the segment count and structure of the input as much as possible. Only merge or omit if a segment carries no translatable semantic weight.
+`;
 
 /**
  * Gemini API 호출
  */
 export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunks) {
   const { targetLang, sourceLang, thinkingLevel, previousContext } = options;
-  console.log(`[YT-AI-Translator-BG] Gemini API 요청 (${chunkIdx}/${totalChunks})`, new Date().toLocaleTimeString(), { thinkingLevel, sourceLang, targetLang });
   
   // 소스 언어 조건 생성
   const sourceCondition = sourceLang === 'Auto' ? 'the source language' : `the language "${sourceLang}"`;
@@ -23,12 +30,15 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
     ? `\n\n[Previous Context (Translation Style Guide)]:\n"${previousContext}"\nUse the context above for consistency in tone and terminology. Translate ONLY the current input below.`
     : '';
 
-  const userPrompt = `${JSON.stringify(chunk)}${contextInstruction}\n\nBased on the data above, translate each "text" field from ${sourceCondition} to "${targetLang}".`;
+  const userPrompt = `[Chunk ${chunkIdx}/${totalChunks}]\n${JSON.stringify(chunk)}${contextInstruction}\n\nTranslate each "text" from ${sourceCondition} to "${targetLang}".`;
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({
         contents: [{ 
           role: 'user',
@@ -39,27 +49,26 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
         },
         generationConfig: { 
           responseMimeType: 'application/json',
-          responseSchema: {
+          responseJsonSchema: {
             type: 'array',
-            description: "A JSON array strictly maintaining 1-to-1 parity with the input. The output length MUST match the input length exactly.",
             items: {
               type: 'object',
               properties: {
                 start: { 
                   type: 'string',
-                  description: "Original timestamp string from input (e.g., '0:01'). DO NOT MODIFY OR REFORMAT."
+                  description: "Original timestamp string from input. DO NOT MODIFY."
                 },
                 text: { 
                   type: 'string',
-                  description: "Mandatory: Translate only this specific segment. DO NOT merge with adjacent segments or skip elements. Ensure 1-to-1 continuity."
+                  description: "Translated target language text (Max 25 chars)"
                 }
               },
-              required: ['start', 'text']
+              required: ['start', 'text'],
+              propertyOrdering: ['start', 'text']
             }
           },
-          temperature: 1.0,
           thinkingConfig: {
-            thinkingLevel: thinkingLevel
+            thinkingLevel: thinkingLevel,
           }
         }
       })

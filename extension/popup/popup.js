@@ -1,4 +1,6 @@
 // YouTube AI Translator - Popup Script
+import { getCacheCount, getCacheStorageSize, getAllCacheMetadata, deleteFromCache, clearCache } from '../lib/cache.js';
+
 // API Key 관리, 설정, 사용량 표시
 
 // ========================================
@@ -152,22 +154,13 @@ async function updateCacheInfo() {
 
 async function loadCacheCount() {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url?.includes('youtube.com')) {
-      elements.cacheCount.textContent = '-';
-      elements.cacheSize.textContent = '0 KB';
-      return;
-    }
+    const count = await getCacheCount();
+    const size = await getCacheStorageSize();
     
-    // 캐시 개수 및 용량 병렬 로드
-    const [countRes, sizeRes] = await Promise.all([
-      chrome.tabs.sendMessage(tab.id, { type: 'GET_CACHE_COUNT' }),
-      chrome.tabs.sendMessage(tab.id, { type: 'GET_CACHE_SIZE' })
-    ]);
-    
-    elements.cacheCount.textContent = countRes?.count ?? 0;
-    elements.cacheSize.textContent = formatBytes(sizeRes?.size ?? 0);
-  } catch {
+    elements.cacheCount.textContent = count;
+    elements.cacheSize.textContent = formatBytes(size);
+  } catch (err) {
+    console.error('[Popup] Fail to load cache count:', err);
     elements.cacheCount.textContent = '-';
     elements.cacheSize.textContent = '0 KB';
   }
@@ -186,59 +179,80 @@ function formatBytes(bytes) {
 
 async function loadCacheList() {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url?.includes('youtube.com')) return;
-    
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_ALL_CACHE' });
-    renderCacheList(response?.list || []);
+    const list = await getAllCacheMetadata();
+    renderCacheList(list);
   } catch (err) {
-    // content script 미로드 시 발생하는 에러는 무시 (정상 동작)
-    if (err.message?.includes('Receiving end does not exist')) return;
     console.error('[Popup] Fail to load cache list:', err);
   }
 }
 
 function renderCacheList(list) {
   if (!list || list.length === 0) {
-    elements.cacheList.innerHTML = '<p class="empty-msg">저장된 번역 내역이 없습니다.</p>';
+    elements.cacheList.innerHTML = '';
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'empty-msg';
+    emptyMsg.textContent = '저장된 번역 내역이 없습니다.';
+    elements.cacheList.appendChild(emptyMsg);
     return;
   }
 
-  elements.cacheList.innerHTML = list.map(item => `
-    <div class="cache-item">
-      <div class="cache-info-main">
-        <a href="https://www.youtube.com/watch?v=${item.videoId}" target="_blank" class="cache-title" title="${item.title}">
-          ${item.title}
-        </a>
-        <div class="cache-meta">
-          <span>📅 ${new Date(item.timestamp).toLocaleDateString()}</span>
-          <span>🌐 ${item.sourceLang} → ${item.targetLang}</span>
-        </div>
-      </div>
-      <button class="btn-del" data-id="${item.videoId}" title="삭제">🗑️</button>
-    </div>
-  `).join('');
+  // DOM API 기반 생성 (XSS 방지)
+  elements.cacheList.innerHTML = '';
+  list.forEach(item => {
+    const cacheItem = document.createElement('div');
+    cacheItem.className = 'cache-item';
 
-  // 삭제 버튼 이벤트 바인딩
-  elements.cacheList.querySelectorAll('.btn-del').forEach(btn => {
-    btn.onclick = (e) => {
-      const videoId = e.currentTarget.dataset.id;
-      handleIndividualDelete(videoId);
-    };
+    const infoMain = document.createElement('div');
+    infoMain.className = 'cache-info-main';
+
+    // 원본 videoId 추출 (언어 접미사 제거)
+    const originalId = item.videoId.replace(/_[^_]+$/, '');
+    const link = document.createElement('a');
+    link.href = `https://www.youtube.com/watch?v=${encodeURIComponent(originalId)}`;
+    link.target = '_blank';
+    link.className = 'cache-title';
+    link.title = item.title;
+    link.textContent = item.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'cache-meta';
+
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = `📅 ${new Date(item.timestamp).toLocaleDateString()}`;
+
+    const langSpan = document.createElement('span');
+    langSpan.textContent = `🌐 ${item.sourceLang} → ${item.targetLang}`;
+
+    meta.append(dateSpan, langSpan);
+    infoMain.append(link, meta);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-del';
+    delBtn.title = '삭제';
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = () => handleIndividualDelete(item.videoId);
+
+    cacheItem.append(infoMain, delBtn);
+    elements.cacheList.appendChild(cacheItem);
   });
 }
 
-async function handleIndividualDelete(videoId) {
+async function handleIndividualDelete(cacheKey) {
   if (!confirm('이 번역 내역을 삭제할까요?')) return;
   
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const response = await chrome.tabs.sendMessage(tab.id, { 
-      type: 'DELETE_CACHE', 
-      payload: { videoId } 
-    });
+    const success = await deleteFromCache(cacheKey);
     
-    if (response?.success) {
+    if (success) {
+      // 동기화: 현재 탭이 삭제된 영상의 탭이라면 UI 초기화 메시지 전송 시도
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url?.includes('youtube.com')) {
+        chrome.tabs.sendMessage(tab.id, { 
+          type: 'DELETE_CACHE', 
+          payload: { videoId: cacheKey } 
+        }).catch(() => {}); // 씹혀도 무관
+      }
+
       showStatus('삭제되었습니다.', 'success');
       await updateCacheInfo();
     }
@@ -247,16 +261,17 @@ async function handleIndividualDelete(videoId) {
   }
 }
 
-async function clearCache() {
+async function clearCacheAll() {
   if (!confirm('모든 번역 캐시를 삭제하시겠습니까?')) return;
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url?.includes('youtube.com')) {
-      showStatus('YouTube 페이지에서 실행해주세요.', 'error');
-      return;
-    }
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'CLEAR_CACHE' });
-    if (response?.success) {
+    const success = await clearCache();
+    if (success) {
+      // 동기화: 현재 유튜브 탭 UI 초기화
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url?.includes('youtube.com')) {
+        chrome.tabs.sendMessage(tab.id, { type: 'CLEAR_CACHE' }).catch(() => {});
+      }
+
       await updateCacheInfo();
       showStatus('모든 캐시가 삭제되었습니다.', 'success');
     }
@@ -288,7 +303,7 @@ function setupEventListeners() {
   elements.thinkingLevel.addEventListener('change', saveSettings);
   
   // 캐시 삭제
-  elements.clearCache.addEventListener('click', clearCache);
+  elements.clearCache.addEventListener('click', clearCacheAll);
   
   // Enter 키로 저장
   elements.apiKey.addEventListener('keypress', (e) => {

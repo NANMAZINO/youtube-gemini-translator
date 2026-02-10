@@ -55,7 +55,7 @@
           추론 레벨 (Thinking Level)
           <span
             class="info-icon"
-            data-tooltip="대부분의 영상은 Minimal로 충분합니다. 품질이 아쉽다면 Low를 사용해보세요."
+            data-tooltip="대부분의 영상은 Minimal로 충분합니다."
             >ℹ️</span
           >
         </label>
@@ -63,6 +63,7 @@
           <option value="minimal">Minimal</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
+          <option value="high">High</option>
         </select>
         <p class="hint">Gemini 3 Flash의 사고 깊이를 조절합니다</p>
       </section>
@@ -157,6 +158,6 @@
       <div id="status" class="status hidden"></div>
     </div>
 
-    <script src="popup.js"></script>
+    <script type="module" src="popup.js"></script>
   </body>
 </html>

@@ -1,8 +1,9 @@
 // YouTube AI Translator - Background Service Worker
 import { callGeminiAPI } from './lib/gemini.js';
+import { callRefineAPI } from './lib/gemini-refiner.js';
 import { getApiKey, updateTokenUsage } from './lib/storage.js';
 
-console.log('[YT-AI-Translator-BG] Background script loaded at:', new Date().toLocaleTimeString());
+
 
 // ========================================
 // 태스크 관리 (중단 로직용: 탭별 현재 실행중인 영상 ID 추적)
@@ -28,13 +29,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleMessage(request, sender) {
-  console.log('[YT-AI-Translator-BG] 메시지 수신:', request.type);
+
   try {
     switch (request.type) {
       case 'TRANSLATE':
         return await handleTranslation(request.payload, sender);
-      case 'GET_API_KEY':
-        return await getApiKey();
+      case 'REFINE_TRANSLATION':
+        return await handleRefine(request.payload, sender);
       case 'CHECK_API_KEY':
         return { hasKey: !!(await getApiKey()) };
       default:
@@ -65,7 +66,7 @@ async function handleTranslation({ chunks, targetLang, sourceLang, thinkingLevel
     for (let i = 0; i < chunks.length; i++) {
       // 태스크 중단 여부 체크 (새 영상이 시작되었거나 탭이 닫혔는지)
       if (tabId && activeTasks.get(tabId) !== videoId) {
-        console.log(`[YT-AI-Translator-BG] 태스크 중단됨 (새 영상 감지): TabID ${tabId}, VideoID ${videoId}`);
+
         return { success: false, error: 'Task preempted by navigation' };
       }
 
@@ -84,7 +85,9 @@ async function handleTranslation({ chunks, targetLang, sourceLang, thinkingLevel
       
       // 실시간 토큰 정산 (중단되더라도 이미 처리된 토큰은 저장)
       const input = chunkResults.usage.promptTokenCount;
-      const output = chunkResults.usage.candidatesTokenCount;
+      // thinking 토큰은 과금 대상이므로 출력에 합산
+      const thinking = chunkResults.usage.thoughtsTokenCount || 0;
+      const output = chunkResults.usage.candidatesTokenCount + thinking;
       await updateTokenUsage(input, output);
       
       totalInput += input;
@@ -105,6 +108,51 @@ async function handleTranslation({ chunks, targetLang, sourceLang, thinkingLevel
   } finally {
     if (tabId && activeTasks.get(tabId) === videoId) {
       activeTasks.delete(tabId);
+    }
+  }
+}
+
+async function handleRefine({ original, draftText, thinkingLevel, videoId }, sender) {
+  const apiKey = await getApiKey();
+  if (!apiKey) throw new Error('API Key가 설정되지 않았습니다.');
+
+  let retries = 0;
+  const MAX_RETRIES = 3;
+
+  while (retries <= MAX_RETRIES) {
+    try {
+      const { parsed, usage } = await callRefineAPI(apiKey, original, draftText, thinkingLevel);
+      
+      // 토큰 정산 (thinking 토큰은 과금 대상이므로 출력에 합산)
+      const input = usage.promptTokenCount;
+      const thinking = usage.thoughtsTokenCount || 0;
+      const output = usage.candidatesTokenCount + thinking;
+      await updateTokenUsage(input, output);
+
+      return { success: true, translations: parsed, usage: { input, output } };
+    } catch (err) {
+      const isRetryable = err.message === 'MODEL_OVERLOADED' || 
+                          err.message.includes('overloaded') || 
+                          err.message.includes('fetch');
+
+      if (isRetryable && retries < MAX_RETRIES) {
+        retries++;
+        console.log(`[YT-AI-Translator-BG] Refine 재시도 중 (${retries}/${MAX_RETRIES})...:`, err.message);
+        
+        // UI에 재시도 상태 표시 (main.js가 이 메시지를 구독함)
+        if (sender?.tab?.id) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            type: 'TRANSLATION_RETRYING',
+            payload: { videoId, current: '재분할', total: '진행', retryCount: retries }
+          }).catch(() => {});
+        }
+        
+        await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
+        continue;
+      }
+      
+      console.error('[YT-AI-Translator-BG] Refine 처리 최종 실패:', err);
+      return { success: false, error: err.message };
     }
   }
 }
