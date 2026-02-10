@@ -14,6 +14,8 @@ Translate [Source Segments] into natural, colloquial target language. Prioritize
 3. Max 25 Characters: Each segment must be under 25 characters (including spaces). Redistribute text across adjacent segments if needed.
 4. Scanability: Subtitles must be instantly readable. Prioritize visual clarity over complete sentences.
 5. Segment Alignment: Maintain the segment count and structure of the input as much as possible. Only merge or omit if a segment carries no translatable semantic weight.
+6. ID Preservation: Each segment has a unique "id". You MUST include this "id" in your response. The "id" should correspond to the source segment that the translated text is derived from.
+7. Strict Start-Time Uniqueness: THE FINAL OUTPUT MUST NOT HAVE ANY DUPLICATE "start" TIMES. If multiple segments (from input or as a result of translation) end up with the EXACT same "start" time, you MUST merge them into a single segment.
 `;
 
 /**
@@ -22,6 +24,12 @@ Translate [Source Segments] into natural, colloquial target language. Prioritize
 export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunks) {
   const { targetLang, sourceLang, thinkingLevel, previousContext } = options;
   
+  // 소스 데이터에 ID 주입
+  const chunkWithIds = chunk.map((item, idx) => ({
+    id: chunkIdx * 1000 + idx,
+    ...item
+  }));
+
   // 소스 언어 조건 생성
   const sourceCondition = sourceLang === 'Auto' ? 'the source language' : `the language "${sourceLang}"`;
   
@@ -30,7 +38,7 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
     ? `\n\n[Previous Context (Translation Style Guide)]:\n"${previousContext}"\nUse the context above for consistency in tone and terminology. Translate ONLY the current input below.`
     : '';
 
-  const userPrompt = `[Chunk ${chunkIdx}/${totalChunks}]\n${JSON.stringify(chunk)}${contextInstruction}\n\nTranslate each "text" from ${sourceCondition} to "${targetLang}".`;
+  const userPrompt = `[Chunk ${chunkIdx}/${totalChunks}]\n${JSON.stringify(chunkWithIds)}${contextInstruction}\n\nTranslate each "text" from ${sourceCondition} to "${targetLang}". Ensure each translated segment maps back to its source "id".`;
 
   try {
     const response = await fetch(GEMINI_API_URL, {
@@ -54,6 +62,10 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
             items: {
               type: 'object',
               properties: {
+                id: {
+                  type: 'integer',
+                  description: "Unique segment ID from the input."
+                },
                 start: { 
                   type: 'string',
                   description: "Original timestamp string from input. DO NOT MODIFY."
@@ -63,8 +75,8 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
                   description: "Translated target language text (Max 25 chars)"
                 }
               },
-              required: ['start', 'text'],
-              propertyOrdering: ['start', 'text']
+              required: ['id', 'start', 'text'],
+              propertyOrdering: ['id', 'start', 'text']
             }
           },
           thinkingConfig: {

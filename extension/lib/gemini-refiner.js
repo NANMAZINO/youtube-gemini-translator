@@ -6,13 +6,15 @@ const REFINER_SYSTEM_PROMPT = `
 Expert Subtitle Aligner & Flow Optimizer.
 
 # Objective
-Re-segment the "Draft Translation" to perfectly align with the "Original Segments"' timing. Ensure the result follows the visual rhythm and scanability rules of professional subtitling.
+Re-segment the "Draft Translation" to align with the "Original Segments" naturally. Focus on creating a professional subtitle timeline with optimal reading pace and natural semantic breaks.
 
 # Guidelines
-1. Timing-Semantic Mapping: Map the draft phrases to the exact timestamps of the original text. If a keyword appears in an original segment, its translation must reside in the corresponding refined segment.
-2. Particle-Based Splitting: When breaking the draft into segments, always split at natural pause points (e.g., Korean particles 은/는/이/가 or verb endings) to maintain "Meaning Units."
-3. Structural Mirroring: Mirror the split-logic of the original segments. If the original text is fragmented for dramatic effect or pacing, the refined translation must follow that same rhythm.
-4. Content Integrity: Do not alter the core meaning of the "Draft Translation." Your task is "Re-segmentation" and "Flow Optimization," not re-translation.
+1. Adaptive Timing: Use the "Original Segments" as a reference for timing, but adjust the "start" time if necessary to fit the length and flow of the translated text. Ensure a smooth transition between segments.
+2. Natural Semantic Splitting: Divide the text into "Meaning Units" (e.g., at particles or verb endings). Prioritize natural breaks over strictly following the original split points if it improves readability.
+3. Flow Optimization: Do not just map 1:1. Merge or split segments if it creates a better visual rhythm and pacing for the audience.
+4. ID Guidance: Maintain a correspondence to the original segment IDs where possible to track the source, but prioritize "Natural Flow" and "Professional Pacing" over strict ID preservation.
+5. Content Integrity: Maintain the core meaning of the "Draft Translation" while optimizing its distribution across the timeline.
+6. Strict Start-Time Uniqueness: THE FINAL OUTPUT MUST NOT HAVE ANY DUPLICATE "start" TIMES. Whether due to input duplicates or your timing adjustments, if segments share the EXACT same "start" time, you MUST merge them into a single segment to avoid overlap.
 `;
 
 /**
@@ -20,7 +22,19 @@ Re-segment the "Draft Translation" to perfectly align with the "Original Segment
  */
 export async function callRefineAPI(apiKey, original, draftText, thinkingLevel) {
 
-  const userPrompt = `[Original Segments]:\n${JSON.stringify(original)}\n\n[Draft Translation]:\n"${draftText}"\n\nTask: Redistribute the "Draft Translation" across the "Original Segments" timeline. Ensure the text for each timestamp accurately reflects the meaning of the original text at that time.`;
+  // 오리지널 데이터에 ID 주입 (만약 없다면)
+  const originalWithIds = original.map((item, idx) => ({
+    id: item.id !== undefined ? item.id : idx,
+    ...item
+  }));
+
+  const userPrompt = `[Original Segments (Reference)]:
+${JSON.stringify(originalWithIds)}
+
+[Draft Translation]:
+"${draftText}"
+
+Task: Create an optimized subtitle timeline by distributing the "Draft Translation" across the segments. Use the original timing and IDs as a guideline, but prioritize natural flow and professional pacing. You may adjust start times and combine/split segments if it leads to a better viewer experience.`;
 
   const requestBody = {
     contents: [{
@@ -37,11 +51,21 @@ export async function callRefineAPI(apiKey, original, draftText, thinkingLevel) 
         items: {
           type: 'object',
           properties: {
-            start: { type: 'string' },
-            text: { type: 'string' },
+            id: { 
+              type: 'integer',
+              description: "Corresponding source segment ID. Use as a reference to track the timeline."
+            },
+            start: { 
+              type: 'string',
+              description: "Optimized start timestamp. Generally follows the original timing but should be adjusted for professional flow."
+            },
+            text: { 
+              type: 'string',
+              description: "Fragment of the translated text for this segment."
+            },
           },
-          required: ['start', 'text'],
-          propertyOrdering: ['start', 'text'],
+          required: ['id', 'start', 'text'],
+          propertyOrdering: ['id', 'start', 'text'],
         },
       },
       thinkingConfig: {
