@@ -102,8 +102,7 @@ git clone https://github.com/<your-repo>/yg-translator.git
 | **번역 언어 (To)**   | 한국어    | 번역 결과 언어 선택                                |
 
 > [!TIP]
-> 대부분의 영상은 추론 레벨 **Minimal**로 충분합니다  
-> 전문적·기술적 내용의 영상은 **Medium** 이상으로 올리면 품질이 향상됩니다
+> 대부분의 영상은 추론 레벨 **Minimal**로 충분합니다
 
 ---
 
@@ -164,3 +163,4 @@ extension/
 - **Shadow DOM** — 호스트 페이지와 격리된 UI
 - **IndexedDB** — 번역 캐시 영구 저장
 - **Vanilla JavaScript** — 프레임워크 의존 없음
+
