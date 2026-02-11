@@ -2,6 +2,11 @@
 import { callGeminiAPI } from './lib/gemini.js';
 import { callRefineAPI } from './lib/gemini-refiner.js';
 import { getApiKey, updateTokenUsage } from './lib/storage.js';
+import { MAX_RETRIES } from './lib/constants.js';
+import { isRetryableError } from './lib/errors.js';
+import { createLogger } from './lib/logger.js';
+
+const log = createLogger('BG');
 
 
 
@@ -42,7 +47,7 @@ async function handleMessage(request, sender) {
         throw new Error(`Unknown message type: ${request.type}`);
     }
   } catch (error) {
-    console.error('[YT-AI-Translator-BG] handleMessage 에러:', error);
+    log.error('handleMessage 에러:', error);
     throw error;
   }
 }
@@ -103,7 +108,7 @@ async function handleTranslation({ chunks, targetLang, sourceLang, thinkingLevel
     }
     return { success: true, translations: results, usage: { input: totalInput, output: totalOutput } };
   } catch (err) {
-    console.error('[YT-AI-Translator-BG] 번역 처리 실패:', err);
+    log.error('번역 처리 실패:', err);
     return { success: false, error: err.message };
   } finally {
     if (tabId && activeTasks.get(tabId) === videoId) {
@@ -117,7 +122,6 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
   if (!apiKey) throw new Error('API Key가 설정되지 않았습니다.');
 
   let retries = 0;
-  const MAX_RETRIES = 3;
 
   while (retries <= MAX_RETRIES) {
     try {
@@ -131,9 +135,7 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
 
       return { success: true, translations: parsed, usage: { input, output } };
     } catch (err) {
-      const isRetryable = err.message === 'MODEL_OVERLOADED' || 
-                          err.message.includes('overloaded') || 
-                          err.message.includes('fetch');
+      const isRetryable = isRetryableError(err);
 
       if (isRetryable && retries < MAX_RETRIES) {
         retries++;
@@ -151,7 +153,7 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
         continue;
       }
       
-      console.error('[YT-AI-Translator-BG] Refine 처리 최종 실패:', err);
+      log.error('Refine 처리 최종 실패:', err);
       return { success: false, error: err.message };
     }
   }
@@ -162,7 +164,6 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
  */
 async function processChunk(apiKey, chunk, options, idx, total, videoId, stream, sender) {
   let retries = 0;
-  const MAX_RETRIES = 3;
 
   while (retries <= MAX_RETRIES) {
     try {
@@ -179,9 +180,7 @@ async function processChunk(apiKey, chunk, options, idx, total, videoId, stream,
 
       return { parsed, usage };
     } catch (err) {
-      const isRetryable = err.message === 'MODEL_OVERLOADED' || 
-                          err.message.includes('overloaded') || 
-                          err.message.includes('fetch');
+      const isRetryable = isRetryableError(err);
 
       if (isRetryable && retries < MAX_RETRIES) {
         retries++;

@@ -12,11 +12,29 @@ export function parseTimestamp(timestamp) {
   return parts[0] || 0;
 }
 
+// CJK 유니코드 범위 정규식 (한국어, 중국어, 일본어)
+const CJK_REGEX = /[\u3000-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF]/g;
+
 /**
- * 토큰 수 추정 (대략적)
+ * 토큰 수 추정 (CJK 문자 가중치 적용)
+ * - ASCII/Latin: 약 4글자 ≈ 1토큰
+ * - CJK (한/중/일): 약 2글자 ≈ 1토큰 (Gemini SentencePiece 기준)
+ * @param {string} text - 추정할 텍스트
+ * @returns {number} 추정 토큰 수
  */
 export function estimateTokens(text) {
-  return Math.ceil((text || '').length / 3);
+  if (!text) return 0;
+
+  // 모듈 레벨 CJK_REGEX 사용
+  const cjkMatches = text.match(CJK_REGEX);
+  const cjkCount = cjkMatches ? cjkMatches.length : 0;
+  const asciiCount = text.length - cjkCount;
+
+  // 각각의 비율로 토큰 수 추정 후 합산
+  const cjkTokens = cjkCount / 2;    // 2글자 ≈ 1토큰
+  const asciiTokens = asciiCount / 4; // 4글자 ≈ 1토큰
+
+  return Math.ceil(cjkTokens + asciiTokens);
 }
 
 /**

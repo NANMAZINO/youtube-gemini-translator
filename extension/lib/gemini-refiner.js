@@ -1,5 +1,6 @@
 // lib/gemini-refiner.js - 번역본 정밀 재분할(Alignment) 모듈
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+import { GEMINI_API_URL } from './constants.js';
+import { throwClassifiedApiError } from './errors.js';
 
 const REFINER_SYSTEM_PROMPT = `
 # Role
@@ -84,12 +85,8 @@ Task: Create an optimized subtitle timeline by distributing the "Draft Translati
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    const status = response.status;
-    // gemini.js와 동일한 에러 분류
-    if (status === 429 || status === 503 || (error.error?.message && error.error.message.includes('overloaded'))) throw new Error('MODEL_OVERLOADED');
-    if (status === 403) throw new Error('QUOTA_EXCEEDED');
-    throw new Error(error.error?.message || `Refiner API failure: ${status}`);
+    // 공통 에러 분류 모듈에 위임
+    await throwClassifiedApiError(response);
   }
 
   const data = await response.json();

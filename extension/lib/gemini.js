@@ -1,5 +1,9 @@
 // lib/gemini.js - Gemini API 통신 전문 모듈
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+import { GEMINI_API_URL } from './constants.js';
+import { throwClassifiedApiError } from './errors.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('Gemini');
 
 const SYSTEM_PROMPT = `
 # Role
@@ -9,13 +13,14 @@ Expert Subtitle Translator & Sync Engineer.
 Translate [Source Segments] into natural, colloquial target language. Prioritize visual rhythm and timestamp accuracy over grammatical perfection.
 
 # Guidelines
-1. Keyword-to-Segment Sync: Match keywords to their specific timestamped segments. Break SVO/SOV grammar if necessary to maintain narrative flow.
-2. Semantic Chunking: Split text into "Meaning Units" using natural break points (e.g., Korean particles or verb endings).
-3. Max 25 Characters: Each segment must be under 25 characters (including spaces). Redistribute text across adjacent segments if needed.
+1. Context: Identify the overarching topic or domain (e.g., daily life, gaming, sports, economy) first to align tone and terminology.
+2. Keyword-to-Segment Sync: Match keywords to their specific timestamped segments. Break SVO/SOV grammar if necessary to maintain narrative flow.
+3. Semantic Chunking: Split text into "Meaning Units" using natural break points (e.g., particles or verb endings).
 4. Scanability: Subtitles must be instantly readable. Prioritize visual clarity over complete sentences.
-5. Segment Alignment: Maintain the segment count and structure of the input as much as possible. Only merge or omit if a segment carries no translatable semantic weight.
-6. ID Preservation: Each segment has a unique "id". You MUST include this "id" in your response. The "id" should correspond to the source segment that the translated text is derived from.
-7. Strict Start-Time Uniqueness: THE FINAL OUTPUT MUST NOT HAVE ANY DUPLICATE "start" TIMES. If multiple segments (from input or as a result of translation) end up with the EXACT same "start" time, you MUST merge them into a single segment.
+5. Contextual Priority & Neutrality: If the context is ambiguous or evidence is insufficient, prioritize semantic safety (the most broadly applicable term) over creative interpretation.
+6. Alignment & ID: Maintain segment count and structure. You MUST include each unique "id".
+8. Strict Start-Time Uniqueness: THE FINAL OUTPUT MUST NOT HAVE ANY DUPLICATE "start" TIMES. Merge segments if they share the exact same start time.
+9. Nuanced Tone Observation: Shifts in speech levels (e.g., formal vs. casual) may be considered as potential indicators of different speakers. Where the context supports it, you may use these stylistic cues to help inform a consistent tone for each inferred persona.
 `;
 
 /**
@@ -87,17 +92,13 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      const status = response.status;
-      // Rate limit / Quota / Overload / 503 에러 구분
-      if (status === 429 || status === 503 || (error.error?.message && error.error.message.includes('overloaded'))) throw new Error('MODEL_OVERLOADED');
-      if (status === 403) throw new Error('QUOTA_EXCEEDED');
-      throw new Error(error.error?.message || `API 요청 실패: ${status}`);
+      // 공통 에러 분류 모듈에 위임
+      await throwClassifiedApiError(response);
     }
 
     return await response.json();
   } catch (err) {
-    console.error('[YT-AI-Translator-BG] Gemini API fetch error:', err);
+    log.error('Gemini API fetch error:', err);
     throw err;
   }
 }

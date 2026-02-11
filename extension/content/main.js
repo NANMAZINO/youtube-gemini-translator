@@ -1,5 +1,6 @@
 // content/main.js - 메인 컨트롤러 모듈
 import { extractCaptions, chunkTranscript } from './captions.js';
+import { openTranscriptPanel } from './transcript-opener.js';
 import { getFromCache, saveToCache, getCacheCount, clearCache, getAllCacheMetadata, deleteFromCache, getCacheStorageSize } from '../lib/cache.js';
 import { 
   prepareRenderingContainer, 
@@ -9,15 +10,47 @@ import {
   clearUI
 } from './ui.js';
 import { getVideoId, parseTimestamp } from './utils.js';
+import {
+  SCRIPT_PANEL_SELECTOR,
+  TRANSLATE_BUTTON_ID,
+  FLOATING_BUTTON_ID,
+  RE_SPLIT_BUTTON_ID
+} from '../lib/constants.js';
+import { createLogger } from '../lib/logger.js';
 
-const TRANSLATE_BUTTON_ID = 'yt-ai-translate-btn';
-const RE_SPLIT_BUTTON_ID = 'yt-ai-refine-btn-ext';
-const SCRIPT_PANEL_SELECTOR = 'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]';
+const log = createLogger('Main');
+
+let panelObserver = null;
+
+function waitForTranscriptPanel() {
+  // 기존 옵저버 정리
+  if (panelObserver) {
+    panelObserver.disconnect();
+    panelObserver = null;
+  }
+
+  // 이미 패널이 있으면 즉시 버튼 주입
+  const existingPanel = document.querySelector(SCRIPT_PANEL_SELECTOR);
+  if (existingPanel && injectTranslateButton(existingPanel)) return;
+
+  // MutationObserver로 패널 등장 감시 (setInterval 대체)
+  panelObserver = new MutationObserver(() => {
+    const panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
+    if (panel && injectTranslateButton(panel)) {
+      panelObserver.disconnect();
+      panelObserver = null;
+    }
+  });
+
+  panelObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
 
 let currentVideoId = null;
-let pollInterval = null;
 
-// 초기화
+// 메시지 리스너 (팝업↔컨텐츠 통신)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'GET_CACHE_COUNT') {
     getCacheCount().then(count => sendResponse({ count }));
@@ -57,8 +90,14 @@ window.addEventListener('yt-navigate-finish', () => {
   const videoId = getVideoId();
   if (videoId !== currentVideoId) {
     currentVideoId = videoId;
-    clearUI(); // 무조건 청소 (홈으로 가는 경우 포함)
-    if (videoId) initPageAction();
+    clearUI(); // 결과 UI 청소
+    if (videoId) {
+      initPageAction();
+    } else {
+      // 영상 페이지가 아니면 진입용 플로팅 버튼도 제거
+      const floatingBtn = document.getElementById(FLOATING_BUTTON_ID);
+      if (floatingBtn) floatingBtn.remove();
+    }
   }
 });
 
@@ -70,25 +109,86 @@ if (getVideoId()) {
 
 function initPageAction() {
   waitForTranscriptPanel();
+  injectFloatingButton();
 }
 
+/**
+ * 영상 하단(제목 근처)에 독립적인 번역 진입점 주입
+ */
+function injectFloatingButton() {
+  if (document.getElementById(FLOATING_BUTTON_ID)) return;
 
+  // 유튜브의 좋아요/공유 버튼이 있는 컨테이너를 우선 탐색
+  const targetContainer = document.querySelector('ytd-menu-renderer.ytd-watch-metadata #top-level-buttons-computed')
+                       || document.querySelector('#top-level-buttons-computed')
+                       || document.querySelector('#top-row.ytd-watch-metadata #owner');
+  
+  if (!targetContainer) {
+    setTimeout(injectFloatingButton, 1000);
+    return;
+  }
 
-function waitForTranscriptPanel() {
-  if (pollInterval) clearInterval(pollInterval);
-  // 주기적으로 패널 감시해서 버튼 주입
-  pollInterval = setInterval(() => {
-    const panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
-    if (panel && injectTranslateButton(panel)) {
-      clearInterval(pollInterval);
-      pollInterval = null;
+  const btn = document.createElement('button');
+  btn.id = FLOATING_BUTTON_ID;
+  btn.innerHTML = '🤖 AI 번역';
+  Object.assign(btn.style, {
+    padding: '0 16px',
+    height: '36px',
+    backgroundColor: '#065fd4', // 유튜브 블루 스타일로 변경
+    color: 'white',
+    border: 'none',
+    borderRadius: '18px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    marginLeft: '8px', // 왼쪽 여백 추가해서 간격 맞춤
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'background-color 0.2s'
+  });
+
+  btn.onmouseover = () => btn.style.backgroundColor = '#054fba';
+  btn.onmouseout = () => btn.style.backgroundColor = '#065fd4';
+
+  btn.onclick = async () => {
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 패널 여는 중...';
+      
+      // 1. 패널 자동 오픈 시도
+      await openTranscriptPanel();
+      
+      // 2. 패널이 열리면 기존의 handleTranslateClick 호출
+      // (기존 버튼을 동적으로 찾아서 클릭 시뮬레이션하거나 직접 호출)
+      const mainBtn = document.getElementById(TRANSLATE_BUTTON_ID);
+      if (mainBtn) {
+        handleTranslateClick(mainBtn);
+      } else {
+        // 패널이 막 열려서 아직 버튼 주입 전일 수 있음
+        setTimeout(() => {
+          const retryBtn = document.getElementById(TRANSLATE_BUTTON_ID);
+          if (retryBtn) handleTranslateClick(retryBtn);
+          else showNotification('번역 버튼을 찾을 수 없습니다.', 'error');
+        }, 500);
+      }
+    } catch (err) {
+      log.error('Auto-open failed:', err);
+      showNotification(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🤖 AI 번역';
     }
-  }, 1000);
+  };
+
+  targetContainer.appendChild(btn);
 }
 
 function injectTranslateButton(panel) {
-  if (document.getElementById(TRANSLATE_BUTTON_ID)) return true;
-  
+  // 이미 버튼 컨테이너가 있고, 그것이 현재 눈에 보이는 곳에 있다면 중단
+  const existingContainer = document.getElementById('yt-ai-btns-container');
+  if (existingContainer && existingContainer.offsetHeight > 0) return true;
+
   const container = document.createElement('div');
   container.id = 'yt-ai-btns-container';
   container.style.display = 'flex';
@@ -102,7 +202,10 @@ function injectTranslateButton(panel) {
     padding: '8px 16px', backgroundColor: '#065fd4', color: 'white',
     border: 'none', borderRadius: '18px', cursor: 'pointer', fontSize: '13px', fontWeight: '500'
   });
-  mainBtn.onclick = () => handleTranslateClick(mainBtn);
+  mainBtn.onclick = (e) => {
+    e.stopPropagation();
+    handleTranslateClick(mainBtn);
+  };
 
   const refineBtn = document.createElement('button');
   refineBtn.id = RE_SPLIT_BUTTON_ID;
@@ -113,12 +216,35 @@ function injectTranslateButton(panel) {
     border: 'none', borderRadius: '18px', cursor: 'not-allowed', fontSize: '12px', fontWeight: '500', 
     opacity: '0.5'
   });
-  // 초기 클릭은 무시 (handleTranslateClick 이후에 활성화됨)
 
   container.append(mainBtn, refineBtn);
-  const header = panel.querySelector('#header') || panel;
-  header.appendChild(container);
-  return true;
+  
+  // 주입 로직 고도화 (Visibility Priority)
+  
+  // 1. 현재 사용자 눈에 보이는 '참여 패널(Engagement Panel)'의 헤더를 최우선으로 함
+  // '동영상 정보'와 '스크립트'가 합쳐진 경우 이 헤더가 유일하게 보임
+  const activeEngagementHeader = document.querySelector('ytd-engagement-panel-section-list-renderer:not([hidden]) ytd-engagement-panel-title-header-renderer #title-container');
+  if (activeEngagementHeader && activeEngagementHeader.offsetHeight > 0) {
+    container.style.padding = '0 0 8px 12px'; // 헤더 옆 공간에 맞춤
+    activeEngagementHeader.parentElement.appendChild(container);
+    return true;
+  }
+
+  // 2. 표준 자막 패널 헤더 (전용 레이아웃인 경우)
+  const standardHeader = panel.querySelector('#header');
+  if (standardHeader && standardHeader.offsetHeight > 0) {
+    standardHeader.appendChild(container);
+    return true;
+  }
+
+  // 3. 최후의 수단: 본문 상단
+  const body = panel.querySelector('#body');
+  if (body && body.offsetHeight > 0) {
+    body.prepend(container);
+    return true;
+  }
+
+  return false;
 }
 
 async function handleTranslateClick(button) {
@@ -190,7 +316,7 @@ async function renderFromCache(button, cached, targetLang) {
   if (shadow) {
     // 기존 컨텐츠 초기화 후 렌더링 (중복 방지)
     const container = shadow.getElementById('streaming-content');
-    if (container) container.innerHTML = '';
+    if (container) container.replaceChildren();
     appendStreamingResults(cached);
     setExportData(cached, getVideoId());
     finalizeClick(button, `✓ ${targetLang} 번역 불러옴 (캐시)`, 'success');
@@ -213,20 +339,56 @@ async function executeTranslation(button, videoId, captions, videoTitle, targetL
   
   const fullTranslations = [];
 
-  let currentPercent = 0;
+  let currentDisplayPercent = 0;
+  let lastRealPercent = 0;
+  let isRetrying = false;
   const startTime = Date.now();
+
+  // 진행도 업데이트 헬퍼
+  const updateProgressUI = () => {
+    if (getVideoId() !== videoId || isRetrying) return;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    button.textContent = `🔄 번역 중 (${currentDisplayPercent}%) [${elapsed}s]`;
+  };
+
+  // 1초마다 타이머 업데이트 및 '가짜' 진행도 3초마다 올리기
+  let crawlCounter = 0;
+  let lastRetryInfo = null; // 재시도 시 UI 갱신용
   const timerInterval = setInterval(() => {
     if (getVideoId() !== videoId) return;
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    button.textContent = `🔄 번역 중 (${currentPercent}%) [${elapsed}s]`;
-  }, 1000);
+
+    if (isRetrying && lastRetryInfo) {
+      // 재시도 중이면 진행도 대신 재시도 타이머 갱신
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      button.textContent = `⏳ 재시도 (${lastRetryInfo.current}/${lastRetryInfo.total})... [${elapsed}s]`;
+    } else {
+      crawlCounter++;
+      if (crawlCounter >= 3) { // 3초마다 1% 상승
+        crawlCounter = 0;
+        const chunkWeight = 100 / total;
+        const nextTargetCap = Math.floor(lastRealPercent + chunkWeight) - 1;
+
+        if (currentDisplayPercent < nextTargetCap) {
+          currentDisplayPercent++;
+        }
+      }
+      updateProgressUI();
+    }
+  }, 1000); // UI(시간) 업데이트는 1초마다
 
   const listener = (msg) => {
     if (msg.type === 'TRANSLATION_CHUNK_DONE' && msg.payload.videoId === videoId) {
       const { current, total, translations } = msg.payload;
-      currentPercent = Math.round((current / total) * 100);
       
-      // [Ghost Subtitles Fix] 현재 보고 있는 영상이 아니면 렌더링 무시 (하지만 데이터는 계속 모음)
+      isRetrying = false; // 성공 시 재시도 상태 해제
+      lastRetryInfo = null;
+      
+      // 실제 완료 시점에 해당 구간의 시작점으로 점프
+      lastRealPercent = Math.round((current / total) * 100);
+      currentDisplayPercent = lastRealPercent;
+      
+      updateProgressUI(); // 즉시 UI 업데이트 (재시도 메시지 빠른 제거)
+      
       const isCurrentVideo = getVideoId() === videoId;
 
       // 데이터 누적 (나중에 캐시 저장 및 다시 돌아왔을 때 사용을 위해 계속 진행)
@@ -252,10 +414,11 @@ async function executeTranslation(button, videoId, captions, videoTitle, targetL
         }
       }
     } else if (msg.type === 'TRANSLATION_RETRYING' && msg.payload.videoId === videoId) {
-      const { current, total, retryCount } = msg.payload;
+      isRetrying = true; // 재시도 상태 진입
+      lastRetryInfo = { current: msg.payload.current, total: msg.payload.total };
       if (getVideoId() === videoId) {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        button.textContent = `⏳ 재시도 (${current}/${total})... [${elapsed}s]`;
+        button.textContent = `⏳ 재시도 (${msg.payload.current}/${msg.payload.total})... [${elapsed}s]`;
       }
     }
   };
@@ -288,15 +451,16 @@ async function executeTranslation(button, videoId, captions, videoTitle, targetL
       updateExtRefineButton(true, () => startRefine(videoId, rawCaptions, fullTranslations));
     } else {
       const errorMsg = response?.error || '알 수 없는 오류';
-      console.error('[YT-AI-Translator] 번역 실패:', errorMsg);
+      log.error('번역 실패:', errorMsg);
       showNotification(`번역 실패: ${errorMsg}`, 'error');
       updateExtRefineButton(false);
     }
   } catch (err) {
-    console.error('[YT-AI-Translator] 통신 오류:', err);
+    log.error('통신 오류:', err);
     showNotification(`통신 오류: ${err.message}`, 'error');
     updateExtRefineButton(false);
   } finally {
+    isRetrying = false; // 종료 시 무조건 해제
     clearInterval(timerInterval);
     chrome.runtime.onMessage.removeListener(listener);
     finalizeClick(button);
@@ -361,6 +525,14 @@ async function startRefine(videoId, originalCaptions, draftResults) {
       updateExtRefineButton(false, null, `⏳ 처리 중... [${elapsed}s]`);
     }, 1000);
 
+    const retryListener = (msg) => {
+      if (msg.type === 'TRANSLATION_RETRYING' && msg.payload.videoId === videoId && msg.payload.current === '재분할') {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        updateExtRefineButton(false, null, `⏳ 재시도 (${msg.payload.retryCount}회)... [${elapsed}s]`);
+      }
+    };
+    chrome.runtime.onMessage.addListener(retryListener);
+
     showNotification('자막 재분할을 시작합니다.', 'info');
 
     // 초안 텍스트 결합
@@ -382,7 +554,7 @@ async function startRefine(videoId, originalCaptions, draftResults) {
       if (shadow) {
         const container = shadow.getElementById('streaming-content');
         if (container) {
-          container.innerHTML = ''; // 기존 초안 싹 비우기
+          container.replaceChildren(); // 기존 초안 싹 비우기
           appendStreamingResults(response.translations); // 1:1 매핑된 결과로 다시 채우기
           container.scrollTop = 0; // 최상단으로 이동해서 '바뀌었다'는 시각적 피드백 제공
         }
@@ -403,10 +575,11 @@ async function startRefine(videoId, originalCaptions, draftResults) {
       throw new Error(response.error);
     }
   } catch (error) {
-    console.error('[Main] Refine failed:', error);
+    log.error('Refine failed:', error);
     showNotification('재분할 실패: ' + error.message, 'error');
     updateExtRefineButton(true, null, '❌ 재시도');
   } finally {
     if (timerInterval) clearInterval(timerInterval);
+    chrome.runtime.onMessage.removeListener(retryListener);
   }
 }

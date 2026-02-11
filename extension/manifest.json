@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "YouTube AI Translator",
   "description": "Gemini Flash 기반 YouTube 자막 전체 문맥 번역",
-  "version": "1.1.0",
+  "version": "1.5.0",
   "permissions": [
     "activeTab",
     "storage",

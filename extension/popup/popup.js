@@ -1,5 +1,9 @@
 // YouTube AI Translator - Popup Script
 import { getCacheCount, getCacheStorageSize, getAllCacheMetadata, deleteFromCache, clearCache } from '../lib/cache.js';
+import { saveApiKey, getApiKey, clearApiKey } from '../lib/storage.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('Popup');
 
 // API Key 관리, 설정, 사용량 표시
 
@@ -39,34 +43,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 설정 로드/저장
 // ========================================
 async function loadSettings() {
-  const result = await chrome.storage.local.get(['apiKey', 'targetLang', 'sourceLang', 'thinkingLevel']);
-  
-  if (result.apiKey) elements.apiKey.value = result.apiKey;
+  const result = await chrome.storage.local.get(['targetLang', 'sourceLang', 'thinkingLevel']);
+
+  // API 키는 난독화 모듈을 통해 조회
+  const apiKey = await getApiKey();
+  if (apiKey) elements.apiKey.value = apiKey;
   if (result.targetLang) elements.targetLang.value = result.targetLang;
   if (result.sourceLang) elements.sourceLang.value = result.sourceLang;
   if (result.thinkingLevel) elements.thinkingLevel.value = result.thinkingLevel;
 }
 
-async function saveApiKey() {
-  const apiKey = elements.apiKey.value.trim();
+async function handleSaveApiKey() {
+  const key = elements.apiKey.value.trim();
   
-  if (!apiKey) {
+  if (!key) {
     showStatus('API Key를 입력해주세요.', 'error');
     return;
   }
   
   // 간단한 형식 검증
-  if (!apiKey.startsWith('AI') && apiKey.length < 30) {
+  if (!key.startsWith('AI') && key.length < 30) {
     showStatus('올바른 API Key 형식이 아닙니다.', 'error');
     return;
   }
   
-  await chrome.storage.local.set({ apiKey });
+  // 난독화 모듈을 통해 저장 (XOR + Base64)
+  await saveApiKey(key);
   showStatus('API Key가 저장되었습니다.', 'success');
 }
 
-async function clearApiKey() {
-  await chrome.storage.local.remove('apiKey');
+async function handleClearApiKey() {
+  await clearApiKey();
   elements.apiKey.value = '';
   showStatus('API Key가 삭제되었습니다.', 'success');
 }
@@ -160,7 +167,7 @@ async function loadCacheCount() {
     elements.cacheCount.textContent = count;
     elements.cacheSize.textContent = formatBytes(size);
   } catch (err) {
-    console.error('[Popup] Fail to load cache count:', err);
+    log.error('Fail to load cache count:', err);
     elements.cacheCount.textContent = '-';
     elements.cacheSize.textContent = '0 KB';
   }
@@ -182,13 +189,13 @@ async function loadCacheList() {
     const list = await getAllCacheMetadata();
     renderCacheList(list);
   } catch (err) {
-    console.error('[Popup] Fail to load cache list:', err);
+    log.error('Fail to load cache list:', err);
   }
 }
 
 function renderCacheList(list) {
   if (!list || list.length === 0) {
-    elements.cacheList.innerHTML = '';
+    elements.cacheList.replaceChildren();
     const emptyMsg = document.createElement('p');
     emptyMsg.className = 'empty-msg';
     emptyMsg.textContent = '저장된 번역 내역이 없습니다.';
@@ -197,7 +204,7 @@ function renderCacheList(list) {
   }
 
   // DOM API 기반 생성 (XSS 방지)
-  elements.cacheList.innerHTML = '';
+  elements.cacheList.replaceChildren();
   list.forEach(item => {
     const cacheItem = document.createElement('div');
     cacheItem.className = 'cache-item';
@@ -292,10 +299,10 @@ function setupEventListeners() {
   });
   
   // API Key 저장
-  elements.saveKey.addEventListener('click', saveApiKey);
+  elements.saveKey.addEventListener('click', handleSaveApiKey);
   
   // API Key 삭제
-  elements.clearKey.addEventListener('click', clearApiKey);
+  elements.clearKey.addEventListener('click', handleClearApiKey);
   
   // 설정 변경 시 자동 저장
   elements.targetLang.addEventListener('change', saveSettings);

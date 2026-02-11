@@ -1,10 +1,12 @@
 // content/ui.js - Shadow DOM UI 및 스타일 관리 모듈
 import { parseTimestamp } from './utils.js';
-
-const SHADOW_HOST_ID = 'yt-ai-translator-shadow-host';
-const OVERLAY_HOST_ID = 'yt-ai-translator-overlay-host';
-const SCRIPT_PANEL_SELECTOR = 'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]';
-const TRANSCRIPT_ITEMS_SELECTOR = 'ytd-transcript-segment-list-renderer';
+import {
+  SHADOW_HOST_ID,
+  OVERLAY_HOST_ID,
+  SCRIPT_PANEL_SELECTOR,
+  TRANSCRIPT_ITEMS_SELECTOR,
+  FLOATING_BUTTON_ID
+} from '../lib/constants.js';
 
 let timeSyncAbortController = null;
 

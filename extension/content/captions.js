@@ -1,9 +1,13 @@
 // content/captions.js - 자막 추출 및 가공 모듈
 import { estimateTokens } from './utils.js';
+import {
+  SCRIPT_PANEL_SELECTOR,
+  MAX_TOKENS_PER_CHUNK,
+  SOFT_LIMIT
+} from '../lib/constants.js';
+import { createLogger } from '../lib/logger.js';
 
-const SCRIPT_PANEL_SELECTOR = 'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]';
-const MAX_TOKENS_PER_CHUNK = 3800;
-const SOFT_LIMIT = 2800;
+const log = createLogger('Captions');
 
 export async function extractCaptions() {
   try {
@@ -27,7 +31,7 @@ export async function extractCaptions() {
       grouped: groupSegmentsBySentence(rawSegments)
     };
   } catch (error) {
-    console.error('[Captions] Extraction failed:', error);
+    log.error('Extraction failed:', error);
     return null;
   }
 }
