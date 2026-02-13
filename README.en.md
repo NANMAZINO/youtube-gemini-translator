@@ -110,20 +110,24 @@ Save translated data to a file or import it from other devices.
 ## 💡 FAQ
 
 **Q. Can it translate videos without subtitles?**
+
 A. No. It requires existing YouTube subtitle data (including auto-generated ones). Videos without any subtitle data are not supported.
 
 **Q. How much does it cost?**
+
 A. Google Gemini API provides a **generous Free Tier** for individual users. For typical YouTube viewing patterns, the free limit is usually sufficient.
 
 - You can check estimated real-time costs (if free tier is exceeded) in the **"Token Usage"** tab of the popup menu.
 
 **Q. The translation stopped.**
+
 A. It might be a temporary network error or API rate limit.
 
 - If the "AI Translate" button changes to a "Retry" state, click it again.
 - It automatically attempts up to 3 retries.
 
 **Q. Do I need to translate every time I re-watch a video?**
+
 A. No! Translated content is **automatically cached on your computer for 30 days**. Re-visiting will instantly load the translated subtitles.
 
 ---
