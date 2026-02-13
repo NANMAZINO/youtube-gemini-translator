@@ -1,152 +1,18 @@
-# 🤖 YouTube AI Translator
+# 🛠 YouTube AI Translator (Technical Documentation)
 
-> Gemini 3 Flash 기반 YouTube 자막 **문맥 번역** Chrome 확장 프로그램
-
-YouTube 영상의 자막(스크립트)을 Gemini AI가 문맥을 이해하며 번역하고,  
-영상 위에 실시간 자막 오버레이로 보여줍니다
+> **Gemini 3 Flash 기반 YouTube 자막 문맥 번역 프로젝트**  
+> 일반 사용자를 위한 안내는 [사용자 가이드](../README.md)를 참고하세요.
 
 ---
 
-## ✨ 주요 기능
+## ✨ 핵심 기능 (Technical Features)
 
-| 기능                 | 설명                                                     |
-| -------------------- | -------------------------------------------------------- |
-| **원클릭 번역**      | 버튼 한 번이면 자막 패널 오픈부터 번역까지 자동 진행     |
-| **문맥 기반 번역**   | 단순 직역이 아닌, 앞뒤 맥락을 이해한 자연스러운 번역     |
-| **실시간 자막 표시** | 번역된 자막이 영상 위에 타이밍에 맞춰 자동 표시          |
-| **실시간 진행률**    | 번역 진행 퍼센트와 경과 시간을 실시간으로 확인           |
-| **자동 재시도**      | 오류 발생 시 자동으로 다시 시도, 상태도 화면에 표시      |
-| **번역 품질 조절**   | AI 사고 깊이를 4단계로 조절                              |
-| **자막 재분할**      | 번역 결과가 길게 뭉쳐 있을 때, 보기 좋게 재배치          |
-| **자동 저장**        | 한 번 번역한 영상은 자동 저장되어 다시 방문 시 바로 적용 |
-| **다국어 지원**      | 한국어 · English · 日本語, 원본 언어 자동 감지           |
-| **비용 확인**        | 사용한 토큰량과 예상 비용을 팝업에서 바로 확인           |
-
----
-
-## 📋 사전 준비
-
-### Gemini API Key 발급
-
-1. **[Google AI Studio](https://aistudio.google.com/apikey)** 에 접속합니다
-2. Google 계정으로 로그인합니다
-3. **"Create API Key"** 버튼을 클릭합니다
-4. 생성된 API Key를 복사해 둡니다
-
-> [!NOTE]
-> API Key는 XOR + Base64 난독화 처리 후 브라우저 로컬 스토리지에 저장되며, 외부 서버로 전송되지 않습니다  
-> 무료 티어에서도 분당 요청 제한 내에서 사용 가능합니다
-
----
-
-## 🚀 설치 방법
-
-### 1. 소스 코드 다운로드
-
-**방법 A — ZIP 다운로드**
-
-1. GitHub 저장소 페이지에서 **Code → Download ZIP** 클릭
-2. 다운로드된 ZIP 파일을 원하는 위치에 압축 해제
-
-**방법 B — Git Clone**
-
-```bash
-git clone https://github.com/<your-repo>/yg-translator.git
-```
-
-### 2. Chrome에 확장 프로그램 등록
-
-1. Chrome 주소창에 `chrome://extensions` 입력 후 이동 또는 "확장앱 관리" 이동
-2. 우측 상단 **"개발자 모드"** 토글을 **ON**으로 변경
-3. **"압축해제된 확장 프로그램을 로드합니다"** 버튼 클릭
-4. 다운로드한 폴더 안의 **`extension`** 폴더를 선택
-5. 확장 프로그램 목록에 **"YouTube AI Translator"** 가 나타나면 설치 완료
-
-> [!TIP]
-> Chrome 상단 퍼즐 아이콘(🧩)을 클릭 → YouTube AI Translator 옆 📌 핀 고정하면  
-> 툴바에서 바로 접근할 수 있습니다
-
----
-
-## 📖 사용 방법
-
-### Step 1 — API Key 등록
-
-1. Chrome 툴바에서 **확장 프로그램 아이콘**을 클릭하여 팝업을 엽니다
-2. **Gemini API Key** 입력창에 복사해둔 API Key를 붙여넣기 합니다
-3. **"저장"** 버튼을 클릭합니다
-
-### Step 2 — 번역 실행
-
-**방법 A — 원클릭 (권장)**
-
-1. 번역할 YouTube 영상 페이지로 이동합니다
-2. 좋아요, 공유 버튼 옆에 나타나는 **"🤖 AI 번역"** 버튼을 클릭합니다
-3. 자막 패널이 **자동으로 열리고** 번역이 즉시 시작됩니다
-
-**방법 B — 수동**
-
-1. 영상 아래 **"...더보기"** → **"스크립트 표시"** 로 자막 패널을 엽니다
-2. 자막 패널 상단의 **"🤖 AI 번역"** 버튼을 클릭합니다
-
-> [!IMPORTANT]
-> 자막이 없는 영상(자동 생성 자막도 없는 경우)은 번역할 수 없습니다
-
-### Step 3 — 번역 진행
-
-1. 번역이 청크 단위로 진행되며, **실시간 진행률(%)과 경과 시간**이 표시됩니다
-2. API 오류 발생 시 **자동 재시도** 되며, 버튼에 재시도 상태가 표시됩니다
-3. 번역된 자막이 **영상 위에 오버레이**로 실시간 표시됩니다
-4. 완료 후 동일 영상 재방문 시 **캐시된 번역이 자동 적용**됩니다
-
-### Step 3.5 — 자막 재분할 (선택)
-
-AI 번역의 결과가 한 줄에 텍스트가 몰려 있어 가독성이 떨어질 수 있습니다  
-**재분할** 기능은 이 문제를 보정합니다
-
-1. 번역이 완료되면 **"🤖 AI 번역"** 버튼 옆에 **"재분할"** 버튼이 활성화됩니다
-2. 클릭하면 Gemini가 번역문을 원본 타임스탬프에 맞춰 **정밀 재배치**합니다
-3. 완료 시 캐시가 자동 업데이트되며, 다음 방문 시 재분할된 버전이 적용됩니다
-
-> [!TIP]
-> 한 줄에 텍스트가 몰려 보일 때 사용하면 효과적입니다  
-> 이미 재분할된 캐시가 있으면 버튼이 **"✅ 재분할 완료"** 로 표시됩니다
-
-### Step 4 — 설정 변경 (선택)
-
-팝업에서 아래 옵션을 조정할 수 있습니다:
-
-| 설정                 | 기본값    | 설명                                               |
-| -------------------- | --------- | -------------------------------------------------- |
-| **추론 레벨**        | Minimal   | Gemini의 사고 깊이 (Minimal → Low → Medium → High) |
-| **원본 언어 (From)** | 자동 감지 | 원본 자막의 언어를 지정하거나 자동 감지            |
-| **번역 언어 (To)**   | 한국어    | 번역 결과 언어 선택                                |
-
-> [!TIP]
-> 대부분의 영상은 추론 레벨 **Minimal**로 충분합니다
-> 화자가 여러명일 경우 추론 레벨을 **Low** 이상으로 올리면 품질이 향상됩니다
-
----
-
-## ⚠️ 제한사항
-
-- 자막(Script) 데이터가 없는 영상은 번역할 수 없습니다
-- 한 번에 하나의 영상만 번역 가능합니다
-- Gemini API 무료 티어의 분당 요청 제한이 적용됩니다
-
----
-
-## 💰 비용 안내
-
-이 확장 프로그램은 Google의 **Gemini 3 Flash** 모델을 사용합니다
-
-| 항목      | 단가              |
-| --------- | ----------------- |
-| 입력 토큰 | $0.50 / 1M tokens |
-| 출력 토큰 | $3.00 / 1M tokens |
-
-- 팝업의 **토큰 사용량** 섹션에서 일별 · 30일 누적 사용량 및 예상 비용을 확인할 수 있습니다
-- 정확한 사용량은 [Google AI Studio](https://aistudio.google.com/)에서 확인하세요
+- **문맥 주입 (Context Injection):** 이전 번역 결과(History)를 다음 청크 번역 시 시스템 프롬프트에 포함하여 일관성 유지.
+- **스트리밍 파싱 (Streaming UI):** `fetch` API의 ReadableStream을 사용하여 AI 응답 수신 즉시 UI 업데이트.
+- **비정형 데이터 스트럭처링:** Gemini JSON Mode를 활용하여 타임스탬프와 텍스트 쌍을 정밀하게 추출.
+- **태스크 프리엠션 (Task Preemption):** AbortController 및 영상 ID 변경 감지를 통해 불필요한 API 호출 즉시 중단.
+- **지수 백오프 재시도:** 429(Rate Limit), 503(Overload) 에러 발생 시 가중치를 둔 재시도 로직 (`retry.js`).
+- **인메모리 & 로컬 스토리지 캐시:** LRU 알고리즘 기반 100개 제한, 30일 TTL 자동 만료 시스템.
 
 ---
 
@@ -154,39 +20,111 @@ AI 번역의 결과가 한 줄에 텍스트가 몰려 있어 가독성이 떨어
 
 ```
 extension/
-├── manifest.json          # Chrome 확장 프로그램 설정 (Manifest V3)
-├── background.js          # Gemini API 통신 및 메시지 라우팅
-├── content.js             # 모듈 시스템 초기화 로더
-├── content.css            # 기본 콘텐츠 스타일
+├── manifest.json                 # Manifest V3 설정 (v2.0.0)
+├── background.js                 # Service Worker — 메시지 라우팅, 번역/재분할 오케스트레이션, 태스크 프리엠션
+├── content.js                    # ESM 동적 import 로더 (content/main.js 진입점)
+├── content.css                   # 버튼·알림 등 콘텐츠 스타일 (인라인 스타일 → CSS 클래스 전환)
 ├── icons/
-│   └── icon.svg           # 확장 프로그램 아이콘
-├── lib/                   # 공통 라이브러리 모듈
-│   ├── constants.js       # 프로젝트 전역 상수 (URL, 셀렉터, 설정값)
-│   ├── errors.js          # API 에러 분류 및 재시도 판별
-│   ├── logger.js          # 모듈 태그 + 레벨 기반 구조화 로거
-│   ├── gemini.js          # Gemini 3 Flash 번역 API 통신
-│   ├── gemini-refiner.js  # 번역본 정밀 재분할(Alignment) 모듈
-│   ├── cache.js           # 번역 캐시 관리 (30일 TTL / 100개 제한)
-│   └── storage.js         # API Key 난독화 저장 · 토큰 사용량 관리
-├── content/               # 기능별 콘텐츠 스크립트
-│   ├── main.js            # 메인 컨트롤러 (패널 감지 · 원클릭 진입 · 진행도 UX)
-│   ├── ui.js              # Shadow DOM 기반 UI 렌더링
-│   ├── captions.js        # 자막 추출 및 전처리
-│   ├── transcript-opener.js # 자막 패널 자동 오픈 모듈
-│   └── utils.js           # 유틸리티 (CJK 토큰 추정 등)
-└── popup/                 # 확장 프로그램 팝업 UI
-    ├── popup.html
-    ├── popup.js
-    └── popup.css
+│   └── icon.svg                  # 확장 프로그램 아이콘 (SVG)
+├── lib/                          # 공통 라이브러리 모듈
+│   ├── constants.js              # 전역 상수 (API URL, 셀렉터, UI/캐시/재시도/진행률 설정값)
+│   ├── errors.js                 # API 에러 분류 (429/503→재시도, 403→권한) 및 재시도 판별
+│   ├── logger.js                 # 모듈 태그 + 레벨 기반 구조화 로거
+│   ├── retry.js                  # 공통 재시도 유틸리티 — 지수 백오프 + 조건부 재시도
+│   ├── gemini.js                 # Gemini 3 Flash 번역 API 통신 (시스템 프롬프트 + JSON 스키마)
+│   ├── gemini-refiner.js         # 번역본 정밀 재분할(Alignment) API — 타임라인 최적화
+│   ├── cache.js                  # 인덱스/데이터 분리 캐시 (30일 TTL, 100개 LRU, 자동 만료)
+│   └── storage.js                # API Key 난독화(XOR+Base64) 저장 · 토큰 사용량 히스토리
+├── content/                      # 기능별 콘텐츠 스크립트 (단일 책임 모듈 분리)
+│   ├── main.js                   # 엔트리 — 모듈 조립, Observer 감시, 페이지 내비게이션 처리
+│   ├── button-injector.js        # 플로팅 버튼·번역·재분할·토글 버튼 주입
+│   ├── translation-flow.js       # 번역 실행·스트리밍 수신·진행률 UI·재분할 공정
+│   ├── panel-controller.js       # AI 패널 토글/열기·캐시 자동 복원·버튼 상태 동기화
+│   ├── message-handler.js        # 팝업 ↔ 콘텐츠 chrome.runtime 메시지 라우팅
+│   ├── shared-actions.js         # 모듈 간 경량 액션 레지스트리 (window 전역 오염 제거)
+│   ├── ui.js                     # Shadow DOM UI — 사이드바·오버레이·시간 동기화·드래그·알림
+│   ├── captions.js               # 자막 추출 + 문장 경계 그룹화 + 토큰 기반 청크 분할
+│   ├── transcript-opener.js      # MutationObserver 기반 자막 패널 자동 오픈
+│   └── utils.js                  # 타임스탬프 파싱 · CJK 가중 토큰 추정 · 영상 ID 추출
+└── popup/                        # 확장 프로그램 팝업 UI
+    ├── popup.html                # 팝업 마크업 (API Key·설정·캐시·토큰 사용량)
+    ├── popup.js                  # 팝업 로직 (설정 저장/로드, 캐시 관리, 비용 계산)
+    └── popup.css                 # 팝업 스타일 (글래스모피즘)
+```
+
+---
+
+## 🏗 아키텍처
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  YouTube Page (Content Scripts)                              │
+│                                                              │
+│  content.js ──► main.js (엔트리 · 모듈 조립)                 │
+│                  ├─ button-injector.js   버튼 주입            │
+│                  ├─ translation-flow.js  번역 실행·스트리밍   │
+│                  ├─ panel-controller.js  패널 토글·상태 관리  │
+│                  ├─ message-handler.js   메시지 라우팅        │
+│                  ├─ shared-actions.js    모듈 간 액션 공유    │
+│                  ├─ ui.js               Shadow DOM 렌더링    │
+│                  ├─ captions.js          자막 추출 + 청크화  │
+│                  ├─ transcript-opener.js 패널 자동 오픈       │
+│                  └─ utils.js            유틸리티              │
+│                                                              │
+│  chrome.runtime.sendMessage()                                │
+│          ▼                                                   │
+├──────────────────────────────────────────────────────────────┤
+│  Background Service Worker                                   │
+│                                                              │
+│  background.js ── handleTranslation / handleRefine           │
+│                    ├─ gemini.js          번역 API 호출       │
+│                    ├─ gemini-refiner.js  재분할 API 호출     │
+│                    ├─ retry.js           공통 재시도 유틸    │
+│                    ├─ storage.js         키 관리 + 토큰      │
+│                    └─ errors.js          에러 분류           │
+│                                                              │
+│  chrome.tabs.sendMessage() (스트리밍 결과 푸시)              │
+│          ▼                                                   │
+│  Content Script → UI 실시간 업데이트                         │
+├──────────────────────────────────────────────────────────────┤
+│  Popup                                                       │
+│  popup.html/js/css ── API Key 저장, 설정, 캐시 관리          │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🛠 기술 스택
 
-- **Chrome Extension Manifest V3**
-- **Gemini 3 Flash** (generativelanguage.googleapis.com)
-- **Shadow DOM** — 호스트 페이지와 격리된 UI
-- **MutationObserver** — 효율적인 DOM 변경 감지 (폴링 대체)
-- **XOR + Base64** — API 키 난독화 스토리지 보호
-- **Vanilla JavaScript** — 프레임워크 의존 없음
+| 영역        | 기술                                                                    |
+| ----------- | ----------------------------------------------------------------------- |
+| 플랫폼      | Chrome Extension **Manifest V3** (Service Worker 기반)                  |
+| AI 모델     | **Gemini 3 Flash Preview** (`generativelanguage.googleapis.com/v1beta`) |
+| UI 격리     | **Shadow DOM** — YouTube 호스트 페이지와 완전 격리                      |
+| DOM 감지    | **MutationObserver** — 패널 등장·페이지 변경 감지 (폴링 제거)           |
+| 모듈 패턴   | **Factory Function** + DI — 단일 책임 분리, `window` 전역 오염 제거     |
+| 에러 핸들링 | **공통 재시도 유틸** (`retry.js`) — 지수 백오프 + 조건부 재시도         |
+| 보안        | **XOR + Base64** — API Key 난독화 로컬 스토리지 보호                    |
+| 언어        | **Vanilla JavaScript (ES Modules)** — 프레임워크 의존 없음              |
+
+---
+
+## 🧪 테스트
+
+Node 내장 테스트 러너 기반 유닛 테스트를 포함합니다
+
+```bash
+# 테스트 실행
+npm test
+
+# 커버리지 포함 실행
+npm run test:coverage
+```
+
+| 테스트 파일             | 대상 모듈                         |
+| ----------------------- | --------------------------------- |
+| `lib/retry.test.js`     | `retry.js` — 지수 백오프 재시도   |
+| `lib/errors.test.js`    | `errors.js` — API 에러 분류       |
+| `content/utils.test.js` | `utils.js` — 타임스탬프·토큰 추정 |
+
+- 커버리지 임계값: line / function / branch 최소 80%

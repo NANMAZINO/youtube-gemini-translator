@@ -1,0 +1,9 @@
+{
+  "name": "yg-translator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"extension/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 --test-coverage-include=extension/lib/retry.js --test-coverage-include=extension/lib/errors.js --test-coverage-include=extension/content/utils.js \"extension/**/*.test.js\""
+  }
+}

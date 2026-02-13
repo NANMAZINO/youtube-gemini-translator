@@ -4,6 +4,7 @@ import { callRefineAPI } from './lib/gemini-refiner.js';
 import { getApiKey, updateTokenUsage } from './lib/storage.js';
 import { MAX_RETRIES } from './lib/constants.js';
 import { isRetryableError } from './lib/errors.js';
+import { withRetry } from './lib/retry.js';
 import { createLogger } from './lib/logger.js';
 
 const log = createLogger('BG');
@@ -121,41 +122,36 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
   const apiKey = await getApiKey();
   if (!apiKey) throw new Error('API Key가 설정되지 않았습니다.');
 
-  let retries = 0;
+  try {
+    const { parsed, usage } = await withRetry(
+      () => callRefineAPI(apiKey, original, draftText, thinkingLevel),
+      {
+        maxRetries: MAX_RETRIES,
+        isRetryable: isRetryableError,
+        onRetry: async ({ attempt, error }) => {
+          log.warn(`Refine 재시도 중 (${attempt}/${MAX_RETRIES})...:`, error.message);
 
-  while (retries <= MAX_RETRIES) {
-    try {
-      const { parsed, usage } = await callRefineAPI(apiKey, original, draftText, thinkingLevel);
-      
-      // 토큰 정산 (thinking 토큰은 과금 대상이므로 출력에 합산)
-      const input = usage.promptTokenCount;
-      const thinking = usage.thoughtsTokenCount || 0;
-      const output = usage.candidatesTokenCount + thinking;
-      await updateTokenUsage(input, output);
+          // UI에 재시도 상태 표시 (main.js가 이 메시지를 구독함)
+          if (sender?.tab?.id) {
+            await chrome.tabs.sendMessage(sender.tab.id, {
+              type: 'TRANSLATION_RETRYING',
+              payload: { videoId, current: '재분할', total: '진행', retryCount: attempt },
+            }).catch(() => {});
+          }
+        },
+      },
+    );
 
-      return { success: true, translations: parsed, usage: { input, output } };
-    } catch (err) {
-      const isRetryable = isRetryableError(err);
+    // 토큰 정산 (thinking 토큰은 과금 대상이므로 출력에 합산)
+    const input = usage.promptTokenCount;
+    const thinking = usage.thoughtsTokenCount || 0;
+    const output = usage.candidatesTokenCount + thinking;
+    await updateTokenUsage(input, output);
 
-      if (isRetryable && retries < MAX_RETRIES) {
-        retries++;
-        console.log(`[YT-AI-Translator-BG] Refine 재시도 중 (${retries}/${MAX_RETRIES})...:`, err.message);
-        
-        // UI에 재시도 상태 표시 (main.js가 이 메시지를 구독함)
-        if (sender?.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'TRANSLATION_RETRYING',
-            payload: { videoId, current: '재분할', total: '진행', retryCount: retries }
-          }).catch(() => {});
-        }
-        
-        await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
-        continue;
-      }
-      
-      log.error('Refine 처리 최종 실패:', err);
-      return { success: false, error: err.message };
-    }
+    return { success: true, translations: parsed, usage: { input, output } };
+  } catch (err) {
+    log.error('Refine 처리 최종 실패:', err);
+    return { success: false, error: err.message };
   }
 }
 
@@ -163,38 +159,37 @@ async function handleRefine({ original, draftText, thinkingLevel, videoId }, sen
  * 단일 청크 처리 및 시도 (Retry logic)
  */
 async function processChunk(apiKey, chunk, options, idx, total, videoId, stream, sender) {
-  let retries = 0;
+  try {
+    return await withRetry(
+      async () => {
+        const response = await callGeminiAPI(apiKey, chunk, options, idx, total);
+        const usage = response.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
+        const content = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
-  while (retries <= MAX_RETRIES) {
-    try {
-      const response = await callGeminiAPI(apiKey, chunk, options, idx, total);
-      const usage = response.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
-      const content = response.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!content) throw new Error('번역 결과 비어있음');
-      const parsed = parseGeminiResponse(content);
+        if (!content) throw new Error('번역 결과 비어있음');
+        const parsed = parseGeminiResponse(content);
 
-      if (stream && sender?.tab?.id) {
-        sendStreamMessage(sender.tab.id, videoId, idx, total, parsed);
-      }
-
-      return { parsed, usage };
-    } catch (err) {
-      const isRetryable = isRetryableError(err);
-
-      if (isRetryable && retries < MAX_RETRIES) {
-        retries++;
-        if (sender?.tab?.id) {
-          chrome.tabs.sendMessage(sender.tab.id, {
-            type: 'TRANSLATION_RETRYING',
-            payload: { videoId, current: idx, total, retryCount: retries }
-          }).catch(() => {});
+        if (stream && sender?.tab?.id) {
+          sendStreamMessage(sender.tab.id, videoId, idx, total, parsed);
         }
-        await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
-        continue;
-      }
-      throw new Error(err.message || '다시 시도했지만 번역에 실패했습니다.');
-    }
+
+        return { parsed, usage };
+      },
+      {
+        maxRetries: MAX_RETRIES,
+        isRetryable: isRetryableError,
+        onRetry: async ({ attempt }) => {
+          if (sender?.tab?.id) {
+            await chrome.tabs.sendMessage(sender.tab.id, {
+              type: 'TRANSLATION_RETRYING',
+              payload: { videoId, current: idx, total, retryCount: attempt },
+            }).catch(() => {});
+          }
+        },
+      },
+    );
+  } catch (err) {
+    throw new Error(err.message || '다시 시도했지만 번역에 실패했습니다.');
   }
 }
 

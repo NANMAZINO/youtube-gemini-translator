@@ -315,7 +315,7 @@ function setupEventListeners() {
   // Enter 키로 저장
   elements.apiKey.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-      saveApiKey();
+      handleSaveApiKey();
     }
   });
 }
