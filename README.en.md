@@ -1,4 +1,4 @@
-[View Technical README (English)](extension/README.md)
+[View Technical README](extension/README.md)
 
 # 🤖 YouTube AI Translator User Guide
 
