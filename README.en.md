@@ -140,3 +140,7 @@ A. No! Translated content is **automatically cached on your computer for 30 days
 ---
 
 Explore the world's knowledge and entertainment without language barriers with YouTube AI Translator! 🌍✨
+
+---
+
+imxtraa7@gmail.com
