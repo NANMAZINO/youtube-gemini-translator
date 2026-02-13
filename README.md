@@ -1,4 +1,4 @@
-[Technical README 보러가기](extension/README.md)
+[English Version](README.en.md) | [Technical README 보러가기](extension/README.md)
 
 # 🤖 YouTube AI Translator 사용자 가이드
 
