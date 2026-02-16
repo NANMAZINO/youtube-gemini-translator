@@ -38,6 +38,38 @@ export function estimateTokens(text) {
 }
 
 /**
+ * Build deterministic fingerprint for grouped transcript segments.
+ * Uses FNV-1a 32-bit over normalized "start<US>text" joined by <RS>.
+ * @param {{start: string, text: string}[]} groupedSegments
+ * @returns {string}
+ */
+export function buildTranscriptFingerprint(groupedSegments) {
+  if (!Array.isArray(groupedSegments) || groupedSegments.length === 0) {
+    return '00000000';
+  }
+
+  const serialized = groupedSegments
+    .map((segment) => {
+      const start = String(segment?.start ?? '');
+      const text = String(segment?.text ?? '')
+        .trim()
+        .replace(/\s+/g, ' ');
+      return `${start}\u001f${text}`;
+    })
+    .join('\u001e');
+
+  let hash = 0x811c9dc5;
+  const fnvPrime = 0x01000193;
+
+  for (let i = 0; i < serialized.length; i += 1) {
+    hash ^= serialized.charCodeAt(i);
+    hash = Math.imul(hash, fnvPrime) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, '0');
+}
+
+/**
  * 영상 ID 추출
  */
 export function getVideoId() {

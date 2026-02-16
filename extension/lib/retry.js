@@ -1,31 +1,77 @@
 // lib/retry.js
-// 공통 재시도 유틸리티 (지수 백오프)
+// Common retry utility with abort-aware exponential backoff.
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function createAbortError() {
+  if (typeof DOMException === 'function') {
+    return new DOMException('Aborted', 'AbortError');
+  }
+  const error = new Error('Aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw createAbortError();
+  }
+}
+
+function abortableSleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      cleanup();
+      reject(createAbortError());
+    };
+
+    const cleanup = () => {
+      signal?.removeEventListener('abort', onAbort);
+    };
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /**
- * 공통 재시도 유틸
+ * Retry wrapper with exponential backoff.
  * @template T
- * @param {() => Promise<T>} fn - 재시도 대상 비동기 함수
+ * @param {() => Promise<T>} fn
  * @param {Object} options
- * @param {number} options.maxRetries - 최대 재시도 횟수 (최초 시도 제외)
- * @param {(error: Error) => boolean} options.isRetryable - 재시도 가능 여부 판별 함수
- * @param {number} [options.baseDelayMs=1000] - 백오프 기준 지연(ms)
+ * @param {number} options.maxRetries
+ * @param {(error: Error) => boolean} options.isRetryable
+ * @param {number} [options.baseDelayMs=1000]
  * @param {(ctx: { attempt: number, delayMs: number, error: Error }) => (void | Promise<void>)} [options.onRetry]
+ * @param {AbortSignal} [options.signal]
  * @returns {Promise<T>}
  */
-export async function withRetry(fn, { maxRetries, isRetryable, baseDelayMs = 1000, onRetry } = {}) {
+export async function withRetry(
+  fn,
+  { maxRetries, isRetryable, baseDelayMs = 1000, onRetry, signal } = {},
+) {
   let retryCount = 0;
 
   while (true) {
+    throwIfAborted(signal);
+
     try {
       return await fn();
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      const canRetry = typeof isRetryable === 'function' ? isRetryable(err) : false;
+      if (err.name === 'AbortError') {
+        throw err;
+      }
 
+      const canRetry = typeof isRetryable === 'function' ? isRetryable(err) : false;
       if (!canRetry || retryCount >= maxRetries) {
         throw err;
       }
@@ -37,8 +83,7 @@ export async function withRetry(fn, { maxRetries, isRetryable, baseDelayMs = 100
         await onRetry({ attempt: retryCount, delayMs, error: err });
       }
 
-      await sleep(delayMs);
+      await abortableSleep(delayMs, signal);
     }
   }
 }
-

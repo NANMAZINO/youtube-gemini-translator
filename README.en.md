@@ -4,7 +4,7 @@
 
 > **"Enjoy YouTube with AI that understands context, beyond language barriers."**
 
-**YouTube AI Translator** is more than just a translator. Leveraging Google's latest **Gemini 1.5 Flash** (updated from Gemini 3 Flash for accuracy) AI model, it understands the full context of a video and provides natural English/Korean subtitles in real-time as a Chrome extension.
+**YouTube AI Translator** is more than a simple translator. Powered by Google's **Gemini 3 Flash Preview** model, it understands the full context of a video and provides natural subtitles in real time as a Chrome extension. In the popup, you can set the source language (Auto) and the target language (Korean, English, Japanese).
 
 ---
 
@@ -14,26 +14,26 @@
 
 Existing auto-translations often break context or fail to track pronouns because they translate sentence by sentence. **YouTube AI Translator** is different.
 
-- **🧠 Context-Aware:** It remembers preceding and following content to provide seamless, natural translations.
-- **⚡ Real-time Streaming:** Subtitles are overlaid directly on the video as the AI translates them.
-- **🎯 Precision Refinement:** It gathers fragmented auto-generated captions into clean, coherent sentences.
-- **💰 Cost-Effective:** Utilizing the Google Gemini API Free Tier, individual users can use it for free in most cases.
+- **🧠 Context-Aware:** Remembers surrounding context to keep tone and terminology consistent.
+- **⚡ Real-time Streaming:** Translation progress and results update immediately in the panel/overlay.
+- **🎯 Precision Refinement (Refine):** Re-groups fragmented auto-captions into clean, readable sentences.
+- **💰 Cost-Effective:** Uses the Google Gemini API Free Tier, so individual users can often use it for free.
 
 ---
 
 ## 🚀 Installation
 
-Currently, this program can be installed via Developer Mode.
+Currently, this extension is installed via Developer Mode.
 
 1. **Prepare Source Code**: Unzip the provided ZIP file or download the code via Git.
-2. **Access Chrome Extensions Page**:
+2. **Open Chrome Extensions Page**:
    - Type `chrome://extensions` in the address bar.
    - Or navigate via Menu (⋮) > Extensions > Manage Extensions.
-3. **Enable Developer Mode**: Toggle the **[Developer mode]** switch in the top right to **ON**.
+3. **Enable Developer Mode**: Toggle **[Developer mode]** (top right) to **ON**.
 4. **Load Extension**:
-   - Click the **[Load unpacked]** button in the top left.
+   - Click **[Load unpacked]** (top left).
    - Select the **`extension`** folder inside the project directory.
-5. **Complete**: When the **"YouTube AI Translator"** card appears, installation is successful!
+5. **Done**: When the **"YouTube AI Translator"** card appears, installation is successful!
    - _Tip: Click the puzzle icon (🧩) and pin (📌) the extension for easy access._
 
 ---
@@ -42,68 +42,73 @@ Currently, this program can be installed via Developer Mode.
 
 A Google Gemini API Key is required (takes about 1 minute).
 
-### Step 1: Issue API Key
+### Step 1: Create an API Key
 
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey) and log in with your Google account.
-2. Click the **"Create API Key"** button.
+2. Click **"Create API Key"**.
 3. Copy the generated key string.
 
-### Step 2: Register Key in Extension
+### Step 2: Register the Key in the Extension
 
-1. Click the **YouTube AI Translator icon** in the Chrome toolbar.
-2. Paste the copied key into the **"Gemini API Key"** input field in the popup.
-3. Click the **[Save]** button.
+1. Click the **YouTube AI Translator** icon in the Chrome toolbar.
+2. Paste the key into the **"Gemini API Key"** field.
+3. Click **[Save]**.
 
-> **Security Note:** Your API Key is stored only inside your browser (obfuscated) and is never transmitted to any external servers.
+> **Security Note:** Your API key is stored locally in your browser (obfuscated via XOR+Base64). This extension does not run a developer-managed server — translation requests are sent **directly from your browser to the Google Gemini API**.
 
 ---
 
 ## 📖 User Manual
 
-### 1. Open Subtitle Panel
+### 1. Open the Script (Transcript) Panel
 
-When you visit a YouTube video page, a **"📜 Open Script"** button will appear next to the Like/Share buttons. Clicking this opens the subtitle (script) panel on the right.
+On a YouTube video page, a **"📜 Open Script"** button appears near the Like/Share buttons. Click it to open the transcript panel on the right.
 
 ### 2. Start AI Translation
 
-Click the **"🤖 AI Translate"** button added at the top of the subtitle panel.
+Click the **"🤖 AI Translate"** button added at the top of the transcript panel.
 
-- The AI reads the captions and begins translation (real-time progress indicator).
-- Translated content is **beautifully overlaid on the video screen**.
-- You can also check the translated text directly in the original subtitle panel.
+- The AI reads the captions and starts translating (with a real-time progress indicator).
+- Translated content is also shown as a **subtitle overlay on the video**.
+- You can review translations inside the extension’s translation panel as well.
 
 > [!TIP]
-> **Overlay Subtitle Customization:**
+> **Overlay subtitle customization:**
 >
-> - **Repositioning:** Drag the subtitle overlay with your mouse to move it anywhere.
-> - **Resizing:** Hover over the overlay and use `Ctrl + Scroll Wheel` to adjust text size in real-time.
+> - **Reposition:** Drag the overlay to move it anywhere.
+> - **Resize:** Hover over the overlay and use your **mouse wheel** to change font size.
+> - **Reset:** Double-click the overlay to reset its position.
 
 ### 3. Subtitle Refinement (Refine)
 
-Auto-generated captions are often fragmented and hard to read. Once translation is complete, the **"Refine Subtitles"** button next to the AI Translate button is activated.
+Auto-generated captions are often fragmented and hard to read. After translation completes, the **"재분할"** (Refine) button next to AI Translate becomes available.
 
-- Clicking this makes the AI readjust the subtitle timelines based on context.
+- It readjusts subtitle timings based on context.
 - Fragmented words are reorganized into clean, easy-to-read sentences.
 
 ### 4. Adjust Settings (Optional)
 
-Click the extension icon to change settings in the popup menu.
+Click the extension icon to change settings in the popup.
 
-- **Thinking Level (Inference Level):**
-  - **Minimal (Default):** Fast and economical. Suitable for most videos.
-  - **Low/Medium/High:** Smarter translations for complex content or multi-speaker videos. (May take slightly more time and tokens.)
+- **Thinking Level:**
+  - **Minimal (Default):** Fast and economical; good for most videos.
+  - **Low / Medium / High:** Better for complex content or multiple speakers (may use more tokens and time).
 - **Language Settings:** Set the source language (Auto-detect) and target language (Korean, English, Japanese).
+- **Resume Mode:** If translation is interrupted (e.g., refresh/F5), reuse completed chunks and continue from where it left off to save time and tokens.
+- **Token Usage:** Check **Today / 30 days** token usage with an **estimated cost (approx.)**.
+- **Cache Management:** View count/size, delete individual items, or clear all (max 100 entries, auto-expire after 30 days).
 
-### 5. Export and Import Data (Advanced)
+### 5. Export / Import JSON (Advanced)
 
-Save translated data to a file or import it from other devices.
+Save translations to a file or import them later.
 
-- **Export:** Click the **[Export]** button in the subtitle panel to save the current translation as a JSON file.
-- **Import:** Use the **[Import]** button injected below the video to load a saved JSON file and apply it immediately.
+- **Export (📥):** Click **📥** in the translation panel header to download the current translation as JSON.
+- **Import (📂):** Click **📂** to load a JSON file and apply it immediately.
+  - Imported data is automatically saved to cache, and import may be disabled when a cache entry already exists for the same video/language.
 
 ### 6. Task Management
 
-- **Auto-Stop:** If you move to another tab or click a different video during translation, the process automatically stops immediately to save battery and resources.
+- **Auto-Stop:** If you switch tabs or open a different video during translation, the task stops immediately to save battery and resources.
 
 ---
 
@@ -111,31 +116,33 @@ Save translated data to a file or import it from other devices.
 
 **Q. Can it translate videos without subtitles?**
 
-A. No. It requires existing YouTube subtitle data (including auto-generated ones). Videos without any subtitle data are not supported.
+A. No. It requires existing YouTube caption data (including auto-generated ones). Videos without any caption data are not supported.
 
 **Q. How much does it cost?**
 
-A. Google Gemini API provides a **generous Free Tier** for individual users. For typical YouTube viewing patterns, the free limit is usually sufficient.
+A. Google Gemini API provides a **generous Free Tier** for individual users. For typical viewing patterns, the free limit is often sufficient.
 
-- You can check estimated real-time costs (if free tier is exceeded) in the **"Token Usage"** tab of the popup menu.
+- Check **Token Usage** in the popup for **Today/30 days** usage and an **estimated cost (approx.)**.
 
 **Q. The translation stopped.**
 
-A. It might be a temporary network error or API rate limit.
+A. It may be a temporary network issue, server overload (429/503), or quota limits (403).
 
-- If the "AI Translate" button changes to a "Retry" state, click it again.
+- If the button changes to a "Retry" state, click it again.
 - It automatically attempts up to 3 retries.
 
 **Q. Do I need to translate every time I re-watch a video?**
 
-A. No! Translated content is **automatically cached on your computer for 30 days**. Re-visiting will instantly load the translated subtitles.
+A. No. Translations are **cached for 30 days**. Re-visiting can load instantly.
+
+- You can review and clear caches in **Cache Management** in the popup.
 
 ---
 
 ## 🛠 Troubleshooting
 
-- **403 Error (Permission Denied):** API Key is incorrect or expired. Please re-issue and register a new key.
-- **429 Error (Resource Exhausted):** Too many requests in a short period. Wait 1-2 minutes and try again.
+- **403 Error:** Often indicates quota limits (Free Tier) or key/project permission issues. Try again later and verify your API key/billing status in AI Studio.
+- **429/503 Error:** The server is overloaded. Wait 1–2 minutes and retry.
 
 ---
 

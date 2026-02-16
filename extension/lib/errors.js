@@ -31,6 +31,9 @@ export async function throwClassifiedApiError(response) {
  * @returns {boolean} 재시도 가능 여부
  */
 export function isRetryableError(err) {
+  if (err?.name === 'AbortError') {
+    return false;
+  }
   return (
     err.message === 'MODEL_OVERLOADED' ||
     err.message.includes('overloaded') ||

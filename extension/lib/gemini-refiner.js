@@ -21,7 +21,7 @@ Re-segment the "Draft Translation" to align with the "Original Segments" natural
 /**
  * 리파이너(재분할) API 호출
  */
-export async function callRefineAPI(apiKey, original, draftText, thinkingLevel) {
+export async function callRefineAPI(apiKey, original, draftText, thinkingLevel, signal) {
 
   // 오리지널 데이터에 ID 주입 (만약 없다면)
   const originalWithIds = original.map((item, idx) => ({
@@ -81,6 +81,7 @@ Task: Create an optimized subtitle timeline by distributing the "Draft Translati
       'Content-Type': 'application/json',
       'x-goog-api-key': apiKey
     },
+    signal,
     body: JSON.stringify(requestBody),
   });
 
@@ -98,4 +99,3 @@ Task: Create an optimized subtitle timeline by distributing the "Draft Translati
 
   return { parsed: JSON.parse(content), usage };
 }
-

@@ -15,7 +15,7 @@
       <!-- 헤더 -->
       <header class="header">
         <h1>🤖 AI Translator</h1>
-        <span class="version">v2.0.0</span>
+        <span class="version">v2.1.1</span>
       </header>
 
       <!-- API Key 섹션 -->
@@ -35,29 +35,22 @@
             placeholder="AI Studio에서 키 발급..."
             class="input"
           />
-          <button id="toggleVisibility" class="btn-icon" title="보기/숨기기">
-            👁️
-          </button>
+          <button id="toggleVisibility" class="btn-icon" title="보기/숨기기">👁️</button>
         </div>
         <div class="button-row">
           <button id="saveKey" class="btn btn-primary">저장</button>
           <button id="clearKey" class="btn btn-danger">삭제</button>
         </div>
         <p class="hint">
-          <a href="https://aistudio.google.com/apikey" target="_blank">
-            Google AI Studio</a
-          >에서 API Key를 발급받으세요
+          <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>에서 API
+          Key를 발급받으세요
         </p>
       </section>
 
       <section class="section">
         <label class="label">
           추론 레벨 (Thinking Level)
-          <span
-            class="info-icon"
-            data-tooltip="대부분의 영상은 Minimal로 충분합니다."
-            >ℹ️</span
-          >
+          <span class="info-icon" data-tooltip="대부분의 영상은 Minimal로 충분합니다.">ℹ️</span>
         </label>
         <select id="thinkingLevel" class="select">
           <option value="minimal">Minimal</option>
@@ -89,6 +82,25 @@
               <option value="日本語">日本語</option>
             </select>
           </div>
+        </div>
+      </section>
+
+      <!-- 이어받기 설정 -->
+      <section class="section">
+        <label class="label">
+          번역 이어받기
+          <span
+            class="info-icon"
+            data-tooltip="새로고침/중단 시 이미 받은 번역 청크를 재사용합니다. API 무료 티어 사용자에게 추천합니다."
+            >ℹ️</span
+          >
+        </label>
+        <div class="toggle-row">
+          <span class="toggle-text">이어받기 모드</span>
+          <label class="switch">
+            <input type="checkbox" id="resumeMode" />
+            <span class="slider"></span>
+          </label>
         </div>
       </section>
 
@@ -139,10 +151,7 @@
         </label>
         <div class="cache-info mb-8">
           <span
-            >저장된 번역: <strong id="cacheCount">0</strong>개 (<span
-              id="cacheSize"
-              >0 KB</span
-            >)</span
+            >저장된 번역: <strong id="cacheCount">0</strong>개 (<span id="cacheSize">0 KB</span>)</span
           >
           <button id="clearCache" class="btn btn-secondary">전체 삭제</button>
         </div>

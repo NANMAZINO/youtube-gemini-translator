@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { withRetry } from './retry.js';
 
-test('withRetry: 성공 시 즉시 결과를 반환한다', async () => {
+test('withRetry: returns immediately on success', async () => {
   let attempts = 0;
 
   const result = await withRetry(
@@ -22,7 +22,7 @@ test('withRetry: 성공 시 즉시 결과를 반환한다', async () => {
   assert.equal(attempts, 1);
 });
 
-test('withRetry: 재시도 가능한 에러는 지수 백오프로 재시도한다', async () => {
+test('withRetry: retries retryable errors with exponential backoff', async () => {
   let attempts = 0;
   const retryEvents = [];
 
@@ -50,7 +50,7 @@ test('withRetry: 재시도 가능한 에러는 지수 백오프로 재시도한�
   ]);
 });
 
-test('withRetry: 재시도 불가 에러는 즉시 throw 한다', async () => {
+test('withRetry: non-retryable errors are thrown immediately', async () => {
   let attempts = 0;
 
   await assert.rejects(
@@ -71,7 +71,7 @@ test('withRetry: 재시도 불가 에러는 즉시 throw 한다', async () => {
   assert.equal(attempts, 1);
 });
 
-test('withRetry: 최대 재시도 횟수를 넘기면 마지막 에러를 throw 한다', async () => {
+test('withRetry: throws when max retries are exceeded', async () => {
   let attempts = 0;
 
   await assert.rejects(
@@ -92,7 +92,7 @@ test('withRetry: 최대 재시도 횟수를 넘기면 마지막 에러를 throw 
   assert.equal(attempts, 3);
 });
 
-test('withRetry: Error가 아닌 throw 값도 Error로 정규화한다', async () => {
+test('withRetry: normalizes non-Error throws to Error', async () => {
   await assert.rejects(
     withRetry(
       async () => {
@@ -109,4 +109,61 @@ test('withRetry: Error가 아닌 throw 값도 Error로 정규화한다', async (
       return true;
     },
   );
+});
+
+test('withRetry: pre-aborted signal throws AbortError immediately', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let attempts = 0;
+
+  await assert.rejects(
+    withRetry(
+      async () => {
+        attempts += 1;
+        return 'should-not-run';
+      },
+      {
+        maxRetries: 3,
+        isRetryable: () => true,
+        signal: controller.signal,
+      },
+    ),
+    (error) => {
+      assert.equal(error?.name, 'AbortError');
+      return true;
+    },
+  );
+
+  assert.equal(attempts, 0);
+});
+
+test('withRetry: abort during backoff sleep throws AbortError', async () => {
+  const controller = new AbortController();
+  let attempts = 0;
+
+  await assert.rejects(
+    withRetry(
+      async () => {
+        attempts += 1;
+        throw new Error('MODEL_OVERLOADED');
+      },
+      {
+        maxRetries: 3,
+        isRetryable: (error) => error.message === 'MODEL_OVERLOADED',
+        baseDelayMs: 50,
+        signal: controller.signal,
+        onRetry: ({ attempt }) => {
+          if (attempt === 1) {
+            setTimeout(() => controller.abort(), 5);
+          }
+        },
+      },
+    ),
+    (error) => {
+      assert.equal(error?.name, 'AbortError');
+      return true;
+    },
+  );
+
+  assert.equal(attempts, 1);
 });

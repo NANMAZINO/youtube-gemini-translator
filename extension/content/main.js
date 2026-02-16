@@ -4,6 +4,7 @@ import { openTranscriptPanel } from './transcript-opener.js';
 import {
   getFromCache,
   saveToCache,
+  savePartialTranslation,
   getCacheCount,
   clearCache,
   getAllCacheMetadata,
@@ -18,7 +19,7 @@ import {
   clearUI,
 } from './ui.js';
 import { sharedActions } from './shared-actions.js';
-import { getVideoId, parseTimestamp } from './utils.js';
+import { getVideoId, parseTimestamp, buildTranscriptFingerprint } from './utils.js';
 import {
   SCRIPT_PANEL_SELECTOR,
   TRANSLATE_BUTTON_ID,
@@ -41,12 +42,14 @@ const translationFlow = createTranslationFlow({
   chunkTranscript,
   getFromCache,
   saveToCache,
+  savePartialTranslation,
   prepareRenderingContainer,
   appendStreamingResults,
   showNotification,
   setExportData,
   getVideoId,
   parseTimestamp,
+  buildTranscriptFingerprint,
   RE_SPLIT_BUTTON_ID,
   log,
 });

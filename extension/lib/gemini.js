@@ -26,7 +26,7 @@ Translate [Source Segments] into natural, colloquial target language. Prioritize
 /**
  * Gemini API 호출
  */
-export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunks) {
+export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunks, signal) {
   const { targetLang, sourceLang, thinkingLevel, previousContext } = options;
   
   // 소스 데이터에 ID 주입
@@ -52,6 +52,7 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
+      signal,
       body: JSON.stringify({
         contents: [{ 
           role: 'user',
@@ -98,7 +99,13 @@ export async function callGeminiAPI(apiKey, chunk, options, chunkIdx, totalChunk
 
     return await response.json();
   } catch (err) {
-    log.error('Gemini API fetch error:', err);
+    if (err?.name === 'AbortError') {
+      log.info('Gemini API request aborted');
+      throw err;
+    }
+
+    const message = err?.message || String(err);
+    log.error('Gemini API fetch error:', message);
     throw err;
   }
 }

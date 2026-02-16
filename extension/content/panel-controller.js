@@ -1,6 +1,5 @@
 // content/panel-controller.js
-// 사이드 패널 토글/열기 및 버튼 상태 관리
-
+// 사이드 패널 토글/열기와 버튼 상태 관리
 export function createPanelController({
   openTranscriptPanel,
   ensureUIReady,
@@ -43,7 +42,7 @@ export function createPanelController({
   }
 
   /**
-   * 패널을 열고 필요한 초기화(캐시 로드 등)를 수행하는 핵심 함수
+   * 패널을 열고 필요 시 캐시를 렌더링합니다.
    */
   async function openPanel() {
     await openTranscriptPanel();
@@ -52,21 +51,29 @@ export function createPanelController({
     if (!shadow) throw new Error('패널 준비 실패');
 
     const videoId = getVideoId();
-    const { targetLang } = await chrome.storage.local.get(['targetLang']);
+    const { targetLang, resumeMode } = await chrome.storage.local.get(['targetLang', 'resumeMode']);
     const currentLang = targetLang || '한국어';
+    const isResumeModeEnabled = resumeMode !== false;
     const cached = await getFromCache(videoId, currentLang);
 
-    if (cached) {
+    if (cached && (!cached.isPartial || isResumeModeEnabled)) {
       const mainBtn = document.getElementById(TRANSLATE_BUTTON_ID);
       await renderFromCache(mainBtn, cached.translations, currentLang);
 
       const result = await extractCaptions();
       const rawCaptions = result?.raw;
-      if (cached.isRefined) {
+
+      if (cached.isPartial) {
+        updateExtRefineButton(false);
+      } else if (cached.isRefined) {
         updateExtRefineButton(false, null, '✅ 재분할 완료');
       } else if (rawCaptions) {
         updateExtRefineButton(true, () => startRefine(videoId, rawCaptions, cached.translations));
+      } else {
+        updateExtRefineButton(false);
       }
+    } else if (cached?.isPartial && !isResumeModeEnabled) {
+      updateExtRefineButton(false);
     }
 
     showNotification('패널이 준비되었습니다.', 'info');
@@ -74,7 +81,7 @@ export function createPanelController({
   }
 
   /**
-   * 패널 토글 버튼의 외형을 실제 패널 상태(열림/닫힘)에 맞춰 동기화
+   * 패널 토글 버튼을 현재 패널 상태(열림/닫힘)에 맞춰 동기화합니다.
    */
   function updateToggleBtnState() {
     const button = document.getElementById(PANEL_TOGGLE_BUTTON_ID);
@@ -89,7 +96,7 @@ export function createPanelController({
   }
 
   /**
-   * 캐시 존재 여부에 따라 가져오기 버튼 활성화/비활성화
+   * 캐시 존재 여부에 따라 가져오기 버튼을 활성/비활성화합니다.
    */
   async function updateImportButtonState() {
     const videoId = getVideoId();

@@ -9,33 +9,100 @@ import { createLogger } from './lib/logger.js';
 
 const log = createLogger('BG');
 
+let taskCounter = 0;
+// Map<tabId, { taskId, videoId, kind, abortController }>
+const activeTasks = new Map();
 
+function createAbortError() {
+  if (typeof DOMException === 'function') {
+    return new DOMException('Aborted', 'AbortError');
+  }
+  const error = new Error('Aborted');
+  error.name = 'AbortError';
+  return error;
+}
 
-// ========================================
-// 태스크 관리 (중단 로직용: 탭별 현재 실행중인 영상 ID 추적)
-// ========================================
-const activeTasks = new Map(); // tabId -> videoId
+function isAbortError(error) {
+  return error?.name === 'AbortError';
+}
 
-chrome.tabs.onRemoved.addListener((tabId) => activeTasks.delete(tabId));
+function createTaskId(prefix = 'task') {
+  taskCounter += 1;
+  return `${prefix}-${Date.now()}-${taskCounter}`;
+}
+
+function delayWithSignal(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      cleanup();
+      reject(createAbortError());
+    };
+
+    const cleanup = () => {
+      signal?.removeEventListener('abort', onAbort);
+    };
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+function isTaskActive(tabId, taskId) {
+  if (tabId == null) return true;
+  return activeTasks.get(tabId)?.taskId === taskId;
+}
+
+function abortAndClearTask(tabId, reason) {
+  const currentTask = activeTasks.get(tabId);
+  if (!currentTask) return;
+
+  currentTask.abortController?.abort();
+  activeTasks.delete(tabId);
+  log.info(`Task aborted: tab=${tabId}, taskId=${currentTask.taskId}, reason=${reason}`);
+}
+
+function setActiveTask(tabId, task) {
+  if (tabId == null) return;
+
+  const previousTask = activeTasks.get(tabId);
+  if (previousTask && previousTask.taskId !== task.taskId) {
+    previousTask.abortController?.abort();
+    log.info(
+      `Task preempted: tab=${tabId}, prevTaskId=${previousTask.taskId}, nextTaskId=${task.taskId}`,
+    );
+  }
+
+  activeTasks.set(tabId, task);
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  abortAndClearTask(tabId, 'tab-removed');
+});
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  // 페이지 이동 시 해당 탭의 태스크 정리
   if (changeInfo.status === 'loading' || changeInfo.url) {
-    activeTasks.delete(tabId);
+    abortAndClearTask(tabId, 'tab-updated');
   }
 });
 
-// ========================================
-// 메시지 핸들러
-// ========================================
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   handleMessage(request, sender)
     .then(sendResponse)
-    .catch(err => sendResponse({ error: err.message }));
-  return true; 
+    .catch((err) => sendResponse({ error: err.message }));
+  return true;
 });
 
 async function handleMessage(request, sender) {
-
   try {
     switch (request.type) {
       case 'TRANSLATE':
@@ -48,129 +115,190 @@ async function handleMessage(request, sender) {
         throw new Error(`Unknown message type: ${request.type}`);
     }
   } catch (error) {
-    log.error('handleMessage 에러:', error);
+    log.error('handleMessage error:', error);
     throw error;
   }
 }
 
-// ========================================
-// 번역 처리
-// ========================================
-async function handleTranslation({ chunks, targetLang, sourceLang, thinkingLevel, videoId, stream = false }, sender) {
+async function handleTranslation(
+  {
+    chunks,
+    targetLang,
+    sourceLang,
+    thinkingLevel,
+    videoId,
+    stream = false,
+    startChunkIndex = 0,
+    initialPreviousContext = '',
+    taskId: incomingTaskId,
+  },
+  sender,
+) {
   const apiKey = await getApiKey();
   if (!apiKey) throw new Error('API Key가 설정되지 않았습니다.');
 
   const tabId = sender?.tab?.id;
-  if (tabId) activeTasks.set(tabId, videoId);
+  const taskId = incomingTaskId || createTaskId('translate');
+  const abortController = new AbortController();
+
+  if (tabId != null) {
+    setActiveTask(tabId, { taskId, videoId, kind: 'translate', abortController });
+  }
 
   const results = [];
   let totalInput = 0;
   let totalOutput = 0;
-  let previousContext = '';
+  let previousContext = initialPreviousContext || '';
+  const parsedStartChunkIndex = Number(startChunkIndex);
+  const normalizedStartChunkIndex = Math.max(
+    0,
+    Math.min(Number.isFinite(parsedStartChunkIndex) ? parsedStartChunkIndex : 0, chunks.length),
+  );
 
   try {
-    for (let i = 0; i < chunks.length; i++) {
-      // 태스크 중단 여부 체크 (새 영상이 시작되었거나 탭이 닫혔는지)
-      if (tabId && activeTasks.get(tabId) !== videoId) {
-
-        return { success: false, error: 'Task preempted by navigation' };
+    for (let i = normalizedStartChunkIndex; i < chunks.length; i += 1) {
+      if (!isTaskActive(tabId, taskId)) {
+        throw createAbortError();
       }
 
       const chunkResults = await processChunk(
-        apiKey, 
-        chunks[i], 
-        { targetLang, sourceLang, thinkingLevel, previousContext }, 
-        i + 1, 
-        chunks.length, 
-        videoId, 
-        stream, 
-        sender
+        apiKey,
+        chunks[i],
+        { targetLang, sourceLang, thinkingLevel, previousContext },
+        i + 1,
+        chunks.length,
+        videoId,
+        taskId,
+        stream,
+        sender,
+        abortController.signal,
       );
-      
+
       results.push(...chunkResults.parsed);
-      
-      // 실시간 토큰 정산 (중단되더라도 이미 처리된 토큰은 저장)
+
       const input = chunkResults.usage.promptTokenCount;
-      // thinking 토큰은 과금 대상이므로 출력에 합산
       const thinking = chunkResults.usage.thoughtsTokenCount || 0;
       const output = chunkResults.usage.candidatesTokenCount + thinking;
       await updateTokenUsage(input, output);
-      
+
       totalInput += input;
       totalOutput += output;
 
-      // 다음 청크를 위한 문맥 업데이트 (마지막 3문장 추출)
       if (chunkResults.parsed.length > 0) {
         const lastItems = chunkResults.parsed.slice(-3);
-        previousContext = lastItems.map(item => item.text).join(' ');
+        previousContext = lastItems.map((item) => item.text).join(' ');
       }
 
-      if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 300));
+      if (i < chunks.length - 1) {
+        await delayWithSignal(300, abortController.signal);
+      }
     }
-    return { success: true, translations: results, usage: { input: totalInput, output: totalOutput } };
-  } catch (err) {
-    log.error('번역 처리 실패:', err);
-    return { success: false, error: err.message };
+
+    return { success: true, translations: results, usage: { input: totalInput, output: totalOutput }, taskId };
+  } catch (error) {
+    if (isAbortError(error)) {
+      log.info(`Translation aborted: tab=${tabId ?? 'none'}, videoId=${videoId}, taskId=${taskId}`);
+      return { success: false, aborted: true, taskId, error: 'ABORTED' };
+    }
+
+    log.error('Translation failed:', error);
+    return { success: false, taskId, error: error.message };
   } finally {
-    if (tabId && activeTasks.get(tabId) === videoId) {
+    if (tabId != null && activeTasks.get(tabId)?.taskId === taskId) {
       activeTasks.delete(tabId);
     }
   }
 }
 
-async function handleRefine({ original, draftText, thinkingLevel, videoId }, sender) {
+async function handleRefine(
+  { original, draftText, thinkingLevel, videoId, taskId: incomingTaskId },
+  sender,
+) {
   const apiKey = await getApiKey();
   if (!apiKey) throw new Error('API Key가 설정되지 않았습니다.');
 
+  const tabId = sender?.tab?.id;
+  const taskId = incomingTaskId || createTaskId('refine');
+  const abortController = new AbortController();
+
+  if (tabId != null) {
+    setActiveTask(tabId, { taskId, videoId, kind: 'refine', abortController });
+  }
+
   try {
     const { parsed, usage } = await withRetry(
-      () => callRefineAPI(apiKey, original, draftText, thinkingLevel),
+      () => callRefineAPI(apiKey, original, draftText, thinkingLevel, abortController.signal),
       {
         maxRetries: MAX_RETRIES,
         isRetryable: isRetryableError,
+        signal: abortController.signal,
         onRetry: async ({ attempt, error }) => {
-          log.warn(`Refine 재시도 중 (${attempt}/${MAX_RETRIES})...:`, error.message);
+          log.warn(`Refine retry (${attempt}/${MAX_RETRIES})...:`, error.message);
 
-          // UI에 재시도 상태 표시 (main.js가 이 메시지를 구독함)
-          if (sender?.tab?.id) {
-            await chrome.tabs.sendMessage(sender.tab.id, {
-              type: 'TRANSLATION_RETRYING',
-              payload: { videoId, current: '재분할', total: '진행', retryCount: attempt },
-            }).catch(() => {});
+          if (tabId != null && isTaskActive(tabId, taskId)) {
+            await chrome.tabs
+              .sendMessage(tabId, {
+                type: 'TRANSLATION_RETRYING',
+                payload: {
+                  videoId,
+                  taskId,
+                  phase: 'refine',
+                  current: 'REFINE',
+                  total: 'REFINE',
+                  retryCount: attempt,
+                },
+              })
+              .catch(() => {});
           }
         },
       },
     );
 
-    // 토큰 정산 (thinking 토큰은 과금 대상이므로 출력에 합산)
     const input = usage.promptTokenCount;
     const thinking = usage.thoughtsTokenCount || 0;
     const output = usage.candidatesTokenCount + thinking;
     await updateTokenUsage(input, output);
 
-    return { success: true, translations: parsed, usage: { input, output } };
-  } catch (err) {
-    log.error('Refine 처리 최종 실패:', err);
-    return { success: false, error: err.message };
+    return { success: true, translations: parsed, usage: { input, output }, taskId };
+  } catch (error) {
+    if (isAbortError(error)) {
+      log.info(`Refine aborted: tab=${tabId ?? 'none'}, videoId=${videoId}, taskId=${taskId}`);
+      return { success: false, aborted: true, taskId, error: 'ABORTED' };
+    }
+
+    log.error('Refine failed:', error);
+    return { success: false, taskId, error: error.message };
+  } finally {
+    if (tabId != null && activeTasks.get(tabId)?.taskId === taskId) {
+      activeTasks.delete(tabId);
+    }
   }
 }
 
-/**
- * 단일 청크 처리 및 시도 (Retry logic)
- */
-async function processChunk(apiKey, chunk, options, idx, total, videoId, stream, sender) {
+async function processChunk(
+  apiKey,
+  chunk,
+  options,
+  idx,
+  total,
+  videoId,
+  taskId,
+  stream,
+  sender,
+  signal,
+) {
   try {
     return await withRetry(
       async () => {
-        const response = await callGeminiAPI(apiKey, chunk, options, idx, total);
+        const response = await callGeminiAPI(apiKey, chunk, options, idx, total, signal);
         const usage = response.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
         const content = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (!content) throw new Error('번역 결과 비어있음');
+        if (!content) throw new Error('번역 결과가 비어 있습니다.');
         const parsed = parseGeminiResponse(content);
 
-        if (stream && sender?.tab?.id) {
-          sendStreamMessage(sender.tab.id, videoId, idx, total, parsed);
+        if (stream && sender?.tab?.id && isTaskActive(sender.tab.id, taskId)) {
+          sendStreamMessage(sender.tab.id, videoId, taskId, idx, total, parsed);
         }
 
         return { parsed, usage };
@@ -178,39 +306,44 @@ async function processChunk(apiKey, chunk, options, idx, total, videoId, stream,
       {
         maxRetries: MAX_RETRIES,
         isRetryable: isRetryableError,
+        signal,
         onRetry: async ({ attempt }) => {
-          if (sender?.tab?.id) {
-            await chrome.tabs.sendMessage(sender.tab.id, {
-              type: 'TRANSLATION_RETRYING',
-              payload: { videoId, current: idx, total, retryCount: attempt },
-            }).catch(() => {});
+          if (sender?.tab?.id && isTaskActive(sender.tab.id, taskId)) {
+            await chrome.tabs
+              .sendMessage(sender.tab.id, {
+                type: 'TRANSLATION_RETRYING',
+                payload: { videoId, taskId, phase: 'translate', current: idx, total, retryCount: attempt },
+              })
+              .catch(() => {});
           }
         },
       },
     );
-  } catch (err) {
-    throw new Error(err.message || '다시 시도했지만 번역에 실패했습니다.');
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
+    throw new Error(error.message || '다시 시도했지만 번역에 실패했습니다.');
   }
 }
 
 function parseGeminiResponse(content) {
   try {
     return JSON.parse(content);
-  } catch (e) {
+  } catch {
     return JSON.parse(repairTruncatedJson(content));
   }
 }
 
-function sendStreamMessage(tabId, videoId, current, total, translations) {
-  chrome.tabs.sendMessage(tabId, {
-    type: 'TRANSLATION_CHUNK_DONE',
-    payload: { videoId, current, total, translations }
-  }).catch(() => {});
+function sendStreamMessage(tabId, videoId, taskId, current, total, translations) {
+  chrome.tabs
+    .sendMessage(tabId, {
+      type: 'TRANSLATION_CHUNK_DONE',
+      payload: { videoId, taskId, phase: 'translate', current, total, translations },
+    })
+    .catch(() => {});
 }
 
-/**
- * 잘린 JSON 문자열 복구 (Helper)
- */
 function repairTruncatedJson(jsonStr) {
   let str = jsonStr.trim();
   let lastPos = str.lastIndexOf('}');
@@ -220,7 +353,7 @@ function repairTruncatedJson(jsonStr) {
     try {
       JSON.parse(candidate);
       return candidate;
-    } catch (e) {
+    } catch {
       str = str.substring(0, lastPos);
       lastPos = str.lastIndexOf('}');
     }
