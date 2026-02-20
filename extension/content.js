@@ -4,7 +4,7 @@
 
 (async () => {
   try {
-    const src = chrome.runtime.getURL('content/main.js');
+    const src = chrome.runtime.getURL('content/app/main.js');
     await import(src);
   } catch (error) {
     // 로거 모듈 로드 전이므로 console.error 직접 사용 (불가피)

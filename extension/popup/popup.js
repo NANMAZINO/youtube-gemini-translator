@@ -5,9 +5,14 @@ import {
   getAllCacheMetadata,
   deleteFromCache,
   clearCache,
-} from '../lib/cache.js';
-import { saveApiKey, getApiKey, clearApiKey } from '../lib/storage.js';
-import { createLogger } from '../lib/logger.js';
+} from '../infrastructure/storage/cache.js';
+import { saveApiKey, getApiKey, clearApiKey } from '../infrastructure/storage/local-store.js';
+import {
+  calculateEstimatedCost,
+  calculateTokenUsage,
+  formatTokenNumber,
+} from './components/token-usage.js';
+import { createLogger } from '../core/logger.js';
 
 const log = createLogger('Popup');
 
@@ -91,24 +96,7 @@ let tokenData = { today: { input: 0, output: 0 }, monthly: { input: 0, output: 0
 
 async function loadTokenUsage() {
   const result = await chrome.storage.local.get('tokenHistory');
-  const history = result.tokenHistory || {};
-  const today = new Date().toISOString().split('T')[0];
-
-  tokenData.today = history[today] || { input: 0, output: 0 };
-
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 30);
-  const cutoffStr = cutoffDate.toISOString().split('T')[0];
-
-  tokenData.monthly = Object.entries(history)
-    .filter(([date]) => date >= cutoffStr)
-    .reduce(
-      (acc, [, usage]) => ({
-        input: acc.input + (usage.input || 0),
-        output: acc.output + (usage.output || 0),
-      }),
-      { input: 0, output: 0 },
-    );
+  tokenData = calculateTokenUsage(result.tokenHistory || {}, new Date());
 
   displayTokenUsage('today');
   setupUsageTabs();
@@ -116,11 +104,11 @@ async function loadTokenUsage() {
 
 function displayTokenUsage(tab) {
   const usage = tokenData[tab];
-  elements.inputTokens.textContent = formatNumber(usage.input);
-  elements.outputTokens.textContent = formatNumber(usage.output);
-  elements.totalTokens.textContent = formatNumber(usage.input + usage.output);
+  elements.inputTokens.textContent = formatTokenNumber(usage.input);
+  elements.outputTokens.textContent = formatTokenNumber(usage.output);
+  elements.totalTokens.textContent = formatTokenNumber(usage.input + usage.output);
 
-  const cost = usage.input * (0.5 / 1_000_000) + usage.output * (3.0 / 1_000_000);
+  const cost = calculateEstimatedCost(usage);
   document.getElementById('estimatedCost').textContent = `$${cost.toFixed(3)}`;
 }
 
@@ -134,12 +122,6 @@ function setupUsageTabs() {
       displayTokenUsage(tab.dataset.tab);
     });
   });
-}
-
-function formatNumber(num) {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return `${num}`;
 }
 
 async function updateCacheInfo() {
