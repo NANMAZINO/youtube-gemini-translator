@@ -102,8 +102,8 @@ Click the extension icon to change settings in the popup.
 
 Save translations to a file or import them later.
 
-- **Export (📥):** Click **📥** in the translation panel header to download the current translation as JSON.
-- **Import (📂):** Click **📂** to load a JSON file and apply it immediately.
+- **Export (💾):** Click **💾** in the translation panel header to download the current translation as JSON.
+- **Import (📁):** Click **📁** to load a JSON file and apply it immediately.
   - Imported data is automatically saved to cache, and import may be disabled when a cache entry already exists for the same video/language.
 
 ### 6. Task Management
