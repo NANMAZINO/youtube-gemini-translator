@@ -8,6 +8,7 @@ import {
 } from '../../core/constants.js';
 import { resolveResumeState } from './resume-resolver.js';
 import { createTranslationExecutor } from './translation-executor.js';
+import { UI_LABELS } from '../../core/ui-icons.js';
 
 const DEFAULT_TARGET_LANG = '한국어';
 
@@ -90,7 +91,7 @@ export function createTranslationFlow({
   function finalizeClick(button, msg, type) {
     if (button) {
       button.disabled = false;
-      button.textContent = 'AI 번역';
+      button.textContent = UI_LABELS.translate;
     }
     if (msg) showNotification(msg, type);
   }
@@ -219,7 +220,7 @@ export function createTranslationFlow({
 
       if (cached && !cached.isPartial) {
         if (cached.isRefined) {
-          updateExtRefineButton(false, null, '재분할 완료');
+          updateExtRefineButton(false, null, UI_LABELS.refineDone);
         } else if (rawCaptions) {
           updateExtRefineButton(true, () =>
             startRefine(videoId, rawCaptions, cached.translations),
@@ -343,7 +344,7 @@ export function createTranslationFlow({
       updateExtRefineButton(
         true,
         () => startRefine(videoId, originalCaptions, draftResults),
-        '재분할 재시도',
+        UI_LABELS.refine,
       );
     };
 
@@ -355,11 +356,11 @@ export function createTranslationFlow({
       const currentLang = targetLang || DEFAULT_TARGET_LANG;
 
       const startTime = Date.now();
-      updateExtRefineButton(false, null, '재분할 처리 중... [0s]');
+      updateExtRefineButton(false, null, `${UI_LABELS.refine} 처리 중... [0s]`);
 
       timerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        updateExtRefineButton(false, null, `재분할 처리 중... [${elapsed}s]`);
+        updateExtRefineButton(false, null, `${UI_LABELS.refine} 처리 중... [${elapsed}s]`);
       }, PROGRESS_TIMER_INTERVAL_MS);
 
       retryListener = (msg) => {
@@ -378,7 +379,7 @@ export function createTranslationFlow({
         updateExtRefineButton(
           false,
           null,
-          `재분할 재시도 중 (${payload.retryCount})... [${elapsed}s]`,
+          `${UI_LABELS.refine} 재시도 중 (${payload.retryCount})... [${elapsed}s]`,
         );
       };
       chrome.runtime.onMessage.addListener(retryListener);
@@ -427,7 +428,7 @@ export function createTranslationFlow({
 
       setExportData(response.translations, videoId);
       showNotification('재분할 완료 및 캐시 업데이트!', 'success');
-      updateExtRefineButton(false, null, '재분할 완료');
+      updateExtRefineButton(false, null, UI_LABELS.refineDone);
     } catch (error) {
       if (isPortClosedError(error)) {
         log.info(`재분할 채널 종료됨: videoId=${videoId}, taskId=${taskId}`);

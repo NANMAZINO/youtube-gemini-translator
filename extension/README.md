@@ -1,115 +1,116 @@
-# 🛠 YouTube AI Translator (Technical Documentation)
+# YouTube AI Translator Technical Documentation
 
-> **Gemini 3 Flash Preview 기반 YouTube 자막 문맥 번역 프로젝트**  
-> 일반 사용자를 위한 안내는 [사용자 가이드](../README.md)를 참고하세요.
+> Technical notes for the Gemini 3 Flash Preview based YouTube caption translation extension.  
+> For end-user setup and usage, see the [English README](../README.md) or the [Korean README](../README.ko.md).
 
----
+![Docs](https://img.shields.io/badge/Docs-Technical-0A7EA4?style=flat-square)
+![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
-## ✨ 핵심 기능 (Technical Features)
+## Core Capabilities
 
-- **문맥 주입 (Context Injection):** 이전 청크의 번역 문맥(최근 결과)을 다음 요청에 주입해 톤/용어 일관성 유지.
-- **스트리밍 UI (Streaming UI):** 청크 완료 메시지를 즉시 반영해 번역 결과를 순차 렌더링.
-- **구조화 응답 (JSON Mode):** Gemini JSON Schema 응답을 사용하며, 번역 경로는 백틱 제거 + 손상 JSON 복구를 적용하고 재분할 경로는 파싱 실패를 명시적 에러로 처리.
-- **부분 저장 & 이어받기 (Resume Mode):** 진행 중 청크를 부분 저장하고 transcript fingerprint + source checkpoint + timestamp fallback으로 재개 지점 계산.
-- **태스크 프리엠션 (Task Preemption):** 탭 단위 active task 추적 + AbortController로 탭 이동/URL 변경 시 불필요 작업 즉시 중단.
-- **Service Worker Keep-Alive:** 번역/재분할 중 keep-alive 포트 ping으로 MV3 Service Worker 비활성화 방지.
-- **중단 인지 재시도 (Abort-aware Retry):** 429/503(overloaded) 대응 지수 백오프 재시도와 중단 신호(AbortSignal) 동시 처리.
-- **로컬 스토리지 캐시:** `chrome.storage.local` 기반 캐시 인덱스(최대 100개) + TTL(30일) 자동 만료. 팝업에서 관리(목록/개별삭제/전체삭제).
-- **토큰 사용량 기록:** 일/30일 기준 입력·출력 토큰 히스토리를 저장하고 팝업에서 추정 비용 표시.
+- **🧠 Context injection**: Feeds recent translated context into the next request to improve tone and terminology consistency.
+- **⚡ Streaming UI**: Renders completed chunks immediately so the panel and overlay update progressively.
+- **🧩 Structured responses**: Uses Gemini JSON schema responses, with repair handling on the translation path and strict parsing on the refine path.
+- **⏯️ Resume mode**: Saves partial progress and computes resume points with transcript fingerprinting, source checkpoints, and timestamp fallback logic.
+- **🛑 Task preemption**: Tracks active work per tab and aborts in-flight jobs when tabs or video URLs change.
+- **🔄 Service worker keep-alive**: Keeps the MV3 service worker alive during translation and refinement.
+- **♻️ Abort-aware retry**: Retries overload-style failures with exponential backoff while still respecting abort signals.
+- **🗂️ Local storage cache**: Stores up to 100 cached translations in `chrome.storage.local` with a 30-day TTL.
+- **📊 Token usage history**: Tracks input and output token usage for daily and 30-day summaries in the popup.
 
----
+## File Structure
 
-## 🗂 파일 구조
-
-```
+```text
 extension/
-├── manifest.json                 # Manifest V3 (v2.1.4)
-├── README.md                     # 기술 문서(현재 파일)
+├── manifest.json                    # Manifest V3 metadata (v2.1.4)
+├── README.md                        # Technical documentation in English
+├── README.ko.md                     # Technical documentation in Korean
 ├── background/
-│   └── service-worker.js         # Service Worker: 번역/재분할 오케스트레이션, 태스크 프리엠션, keep-alive 대응
-├── content.js                    # ESM 로더 (content/app/main.js 진입)
-├── content.css                   # 콘텐츠/버튼 스타일
+│   └── service-worker.js            # Translation/refine orchestration, task preemption, keep-alive
+├── content.js                       # ESM loader entry for content/app/main.js
+├── content.css                      # Content script and injected UI styling
 ├── icons/
-│   └── icon.svg                  # 확장 아이콘 리소스
+│   └── icon.svg                     # Extension icon asset
 ├── core/
-│   ├── constants.js              # 전역 상수 (API URL, 셀렉터, UI/캐시/재시도 설정)
-│   ├── errors.js                 # API 에러 분류 (MODEL_OVERLOADED/QUOTA_EXCEEDED 등)
-│   ├── errors.test.js            # errors.js 유닛 테스트
-│   ├── logger.js                 # 모듈 태그 + 레벨 로깅
-│   ├── utils.js                  # 타임스탬프/토큰 추정/fingerprint 유틸
-│   └── utils.test.js             # utils.js 유닛 테스트
+│   ├── constants.js                 # Shared constants for API, selectors, cache, retry, and UI settings
+│   ├── errors.js                    # API error classification
+│   ├── errors.test.js               # Unit tests for error classification
+│   ├── logger.js                    # Tagged logger utilities
+│   ├── utils.js                     # Timestamp, token estimate, and fingerprint utilities
+│   └── utils.test.js                # Unit tests for shared utilities
 ├── infrastructure/
 │   ├── api/
-│   │   ├── gemini-client.js      # Gemini 번역/재분할 통합 API 클라이언트
-│   │   ├── retry.js              # AbortSignal 대응 지수 백오프 재시도 유틸
-│   │   └── retry.test.js         # retry.js 유닛 테스트
+│   │   ├── gemini-client.js         # Gemini translation and refine client
+│   │   ├── retry.js                 # Abort-aware exponential backoff retry helper
+│   │   └── retry.test.js            # Unit tests for retry logic
 │   └── storage/
-│       ├── cache.js              # 캐시 (30일 TTL, 최대 100개 인덱스, 부분 저장)
-│       ├── cache.test.js         # cache.js 유닛 테스트
-│       └── local-store.js        # API Key 난독화 저장, 토큰 히스토리
+│       ├── cache.js                 # Cache storage with TTL, indexing, and partial-save support
+│       ├── cache.test.js            # Unit tests for cache behavior
+│       └── local-store.js           # API key obfuscation and token history storage
 ├── content/
 │   ├── app/
-│   │   ├── main.js               # 엔트리: Observer/네비게이션 처리, 모듈 조립
-│   │   └── panel-controller.js   # 패널 열기/토글 + 캐시 렌더
+│   │   ├── main.js                  # Main entry, observers, navigation handling, module wiring
+│   │   └── panel-controller.js      # Panel open/toggle flow and cached render coordination
 │   ├── dom/
-│   │   ├── button-injector.js    # "📜 스크립트 열기", "🤖 AI 번역", "재분할", 패널 토글 주입
-│   │   ├── captions.js           # 자막 추출/가공
-│   │   └── transcript-opener.js  # 유튜브 스크립트 패널 오픈
+│   │   ├── button-injector.js       # Injects transcript, translate, refine, and panel toggle buttons
+│   │   ├── captions.js              # Caption extraction and normalization
+│   │   └── transcript-opener.js     # Opens YouTube transcript panel
 │   ├── flow/
-│   │   ├── translation-flow.js   # 번역/이어받기/재분할 플로우 오케스트레이션
-│   │   ├── translation-executor.js # 번역 실행 세션(스트리밍/진행률/부분저장) 전담
-│   │   ├── resume-resolver.js    # 이어받기 시작 청크 계산 로직
-│   │   └── resume-resolver.test.js # resume-resolver.js 유닛 테스트
+│   │   ├── translation-flow.js      # High-level translation, resume, and refine orchestration
+│   │   ├── translation-executor.js  # Translation session execution and progress streaming
+│   │   ├── resume-resolver.js       # Resume start point resolution
+│   │   └── resume-resolver.test.js  # Unit tests for resume logic
 │   └── ui/
-│       ├── ui.js                 # Shadow DOM 패널/오버레이 UI, import/export, 알림
-│       └── ui-overlay.js         # 영상 오버레이/드래그/폰트 크기 제어
+│       ├── ui.js                    # Shadow DOM panel UI, import/export, notifications
+│       └── ui-overlay.js            # On-video overlay, drag, and font-size control
 └── popup/
-    ├── popup.html                # 설정/토큰/캐시 UI
-    ├── popup.js                  # 설정 저장, 토큰/캐시 목록 렌더링
-    ├── popup.css                 # 팝업 스타일
+    ├── popup.html                   # Popup markup for settings, token usage, and cache
+    ├── popup.js                     # Popup behavior and rendering
+    ├── popup.css                    # Popup styling
     └── components/
-        ├── token-usage.js        # 토큰 집계/비용 계산 순수 로직
-        └── token-usage.test.js   # token-usage.js 유닛 테스트
+        ├── token-usage.js           # Pure token aggregation and cost estimation logic
+        └── token-usage.test.js      # Unit tests for token usage calculations
 ```
 
----
+## Repository Docs
 
-## 🛠 기술 스택
+- `../README.md` - default English user guide
+- `../README.ko.md` - Korean user guide
+- `./README.md` - default English technical guide
+- `./README.ko.md` - Korean technical guide
 
-| 영역        | 기술                                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------------------- |
-| 플랫폼      | Chrome Extension **Manifest V3** (Service Worker 기반)                                                |
-| AI 모델     | **Gemini 3 Flash Preview** (`generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview`) |
-| UI 격리     | **Shadow DOM** — YouTube 호스트 페이지와 격리                                                         |
-| DOM 감지    | **MutationObserver** — 패널 등장/페이지 전환 감지                                                     |
-| 모듈 패턴   | **Factory Function** + DI — 단일 책임 분리, 전역 오염 최소화                                          |
-| 에러 핸들링 | 공통 재시도 유틸(`retry.js`) + 에러 분류(`errors.js`)                                                 |
-| 안정성      | **AbortController** + keep-alive 포트 + 중단 인지 재시도                                              |
-| 보안        | **XOR + Base64** — API Key 난독화 로컬 저장                                                           |
-| 언어        | Vanilla JavaScript (ES Modules)                                                                       |
+## Tech Stack
 
----
+| Area | Technology |
+| --- | --- |
+| Platform | Chrome Extension **Manifest V3** |
+| AI model | **Gemini 3 Flash Preview** via `generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview` |
+| UI isolation | **Shadow DOM** |
+| DOM observation | **MutationObserver** |
+| Module style | Factory-style composition with dependency separation |
+| Error handling | Shared retry utility plus explicit API error classification |
+| Stability | **AbortController** plus service-worker keep-alive |
+| Storage | `chrome.storage.local` |
+| Language | Vanilla JavaScript with ES modules |
 
-## 🧪 테스트
+## Tests
 
-Node 내장 테스트 러너 기반 유닛 테스트를 포함합니다.
+This repository includes unit tests with Node's built-in test runner.
 
 ```bash
-# 테스트 실행
 npm test
-
-# 커버리지 포함 실행
 npm run test:coverage
 ```
 
-| 테스트 파일                            | 대상 모듈                                                |
-| -------------------------------------- | -------------------------------------------------------- |
-| `infrastructure/storage/cache.test.js` | `cache.js` — 캐시(LRU/TTL/삭제/부분 저장)                |
-| `infrastructure/api/retry.test.js`     | `retry.js` — 지수 백오프 재시도                          |
-| `core/errors.test.js`                  | `errors.js` — API 에러 분류                              |
-| `content/flow/resume-resolver.test.js` | `resume-resolver.js` — 이어받기 시작 지점 계산/폴백 로직 |
-| `core/utils.test.js`                   | `utils.js` — 타임스탬프/토큰 추정 등                     |
-| `popup/components/token-usage.test.js` | `token-usage.js` — 일/30일 토큰 집계와 비용 계산         |
+| Test file | Covered module |
+| --- | --- |
+| `infrastructure/storage/cache.test.js` | `cache.js` cache lifecycle and partial-save behavior |
+| `infrastructure/api/retry.test.js` | `retry.js` exponential backoff retry behavior |
+| `core/errors.test.js` | `errors.js` API error classification |
+| `content/flow/resume-resolver.test.js` | `resume-resolver.js` checkpoint and fallback resume logic |
+| `core/utils.test.js` | `utils.js` shared utility helpers |
+| `popup/components/token-usage.test.js` | `token-usage.js` token aggregation and cost estimation |
 
-- 커버리지 측정 대상은 `package.json`의 `test:coverage` 스크립트(`--test-coverage-include`) 기준입니다.
-- 커버리지 임계값: line / function / branch 최소 80%
+- Coverage targets are configured through the root `package.json` `test:coverage` script.
+- Current thresholds are 80% minimum for lines, functions, and branches.

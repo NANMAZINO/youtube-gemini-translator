@@ -5,6 +5,7 @@ import {
   PROGRESS_TIMER_INTERVAL_MS,
 } from '../../core/constants.js';
 import { buildSourceChunkCheckpoints, clampChunkIndex } from './resume-resolver.js';
+import { UI_LABELS } from '../../core/ui-icons.js';
 
 export function createTranslationExecutor({
   chunkTranscript,
@@ -36,7 +37,7 @@ export function createTranslationExecutor({
   function finalizeClick(button, msg, type) {
     if (button) {
       button.disabled = false;
-      button.textContent = 'AI 번역';
+      button.textContent = UI_LABELS.translate;
     }
     if (msg) showNotification(msg, type);
   }

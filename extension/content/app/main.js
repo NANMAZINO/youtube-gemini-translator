@@ -21,7 +21,6 @@ import {
 } from '../ui/ui.js';
 import { getVideoId, parseTimestamp, buildTranscriptFingerprint } from '../../core/utils.js';
 import {
-  SCRIPT_PANEL_SELECTOR,
   TRANSLATE_BUTTON_ID,
   FLOATING_BUTTON_ID,
   RE_SPLIT_BUTTON_ID,
@@ -33,6 +32,7 @@ import { createLogger } from '../../core/logger.js';
 import { createButtonInjector } from '../dom/button-injector.js';
 import { createTranslationFlow } from '../flow/translation-flow.js';
 import { createPanelController } from './panel-controller.js';
+import { findTranscriptPanel, isTranscriptPanelOpen } from '../dom/transcript-dom.js';
 
 const log = createLogger('Main');
 
@@ -134,7 +134,6 @@ setUIActionHandlers({
 const buttonInjector = createButtonInjector({
   showNotification,
   openTranscriptPanel,
-  SCRIPT_PANEL_SELECTOR,
   FLOATING_BUTTON_ID,
   TRANSLATE_BUTTON_ID,
   RE_SPLIT_BUTTON_ID,
@@ -174,13 +173,15 @@ function startMainObserver() {
       const videoId = getVideoId();
       if (!videoId) return;
 
-      const panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
-      if (panel) buttonInjector.injectTranslateButton(panel);
+      const panel = findTranscriptPanel();
+      if (isTranscriptPanelOpen(panel)) {
+        buttonInjector.injectTranslateButton(panel);
+      }
       buttonInjector.injectFloatingButton();
 
       const shadowHost = document.getElementById(SHADOW_HOST_ID);
       if (shadowHost && shadowHost.isConnected) {
-        const isPanelVisible = panel && !panel.hidden && panel.offsetHeight > 0;
+        const isPanelVisible = isTranscriptPanelOpen(panel);
         if (!isPanelVisible) {
           log.info('Native script panel closed, clearing AI UI...');
           clearUI(true);
@@ -193,6 +194,8 @@ function startMainObserver() {
   mainObserver.observe(document.body, {
     childList: true,
     subtree: true,
+    attributes: true,
+    attributeFilter: ['hidden', 'style', 'visibility', 'target-id'],
   });
 }
 
