@@ -1,4 +1,4 @@
-export const REBUILD_META = Object.freeze({
+export const RUNTIME_META = Object.freeze({
   phase: 'Runtime',
   title: 'Default typed MV3 path',
   summary:

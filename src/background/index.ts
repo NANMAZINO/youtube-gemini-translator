@@ -2,8 +2,8 @@ import type {
   RuntimeCommand,
   RuntimeCommandResult,
 } from '../shared/contracts/index.ts';
-import { createFailure, createSuccess, isRebuildCommand } from '../shared/messaging.ts';
-import { REBUILD_META } from '../shared/rebuild-meta.ts';
+import { createFailure, createSuccess, isRuntimeCommand } from '../shared/messaging.ts';
+import { RUNTIME_META } from '../shared/runtime-meta.ts';
 import {
   clearCacheRecords,
   deleteCacheRecord,
@@ -124,7 +124,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!isRebuildCommand(message)) return false;
+  if (!isRuntimeCommand(message)) return false;
 
   handleCommand(message, sender.tab?.id)
     .then(sendResponse)
@@ -142,5 +142,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 console.info(
-  `[YT AI Translator] Background runtime loaded (${REBUILD_META.phase}: ${REBUILD_META.title})`,
+  `[YT AI Translator] Background runtime loaded (${RUNTIME_META.phase}: ${RUNTIME_META.title})`,
 );

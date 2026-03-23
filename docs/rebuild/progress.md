@@ -10,9 +10,36 @@
 | Phase 4 background/popup rebuild | Done | Typed translation start/resume/cancel and refine orchestration now run in `src/background`, and `src/content` projects typed task events into a lightweight preview monitor |
 | Phase 5 content/UI rebuild | Done | Typed YouTube adapters, preview controls, label registry, and panel/overlay surface now live under `src/` |
 | Phase 6 cutover | Done | `src/` and `dist/` are now the default runtime and build path |
-| Post-cutover cleanup | In Progress | Archived `extension/` references still need targeted cleanup and regression trimming |
+| Post-cutover cleanup | Done | DOM fixtures, regression checklist, CI gate, and release cutover follow-ups are all checked in |
 
 ## 2026-03-24
+
+### Session Start
+
+- **In Progress:** finish the remaining post-cutover release work by checking in transcript DOM fixtures, freezing the regression checklist, adding a CI `npm run check` gate, and cutting the first stable runtime release version
+
+### Session End
+
+- **Done:** added checked-in legacy and modern YouTube transcript HTML fixtures plus `jsdom`-backed tests for transcript capability detection, extraction, and attribute-only panel opening
+- **Done:** published `docs/rebuild/transcript-regression-checklist.md` so manual release verification now has a fixed checklist beside the automated fixture coverage
+- **Done:** added `.github/workflows/check.yml` so GitHub runs `npm run check` on pushes and pull requests
+- **Done:** migrated active storage schema markers away from rebuild-prefixed keys while preserving fallback compatibility for existing stored data
+- **Done:** bumped the typed runtime manifest version to `3.0.0` for the first post-cutover stable release line
+- **Decision:** keep `docs/rebuild/` as the migration-history namespace and keep `extension/` as a minimal regression reference instead of deleting historical context entirely
+- **Risk:** live browser verification is still the only way to confirm current YouTube production DOM behavior after future upstream markup changes, even with fixtures and CI in place
+- **Validation:** `npm run check`, `npm run test:coverage`
+
+### Session Start
+
+- **In Progress:** trim the last clearly unused legacy duplicate entrypoints under `extension/` so the archived reference tree stops carrying parallel flat-module stacks
+
+### Session End
+
+- **Done:** removed the obsolete `extension/lib/*` layer plus the unused flat `extension/content/*.js` and `extension/background.js` duplicate entrypoints that were no longer referenced by the retained legacy manifest path
+- **Done:** updated legacy coverage targets and the archived legacy README structure so tests and docs point at the still-retained reference modules instead of deleted duplicates
+- **Decision:** keep `extension/content.js` and the nested `content/app|dom|flow|ui/*` plus `background/service-worker.js` structure as the minimal archived legacy runtime slice until DOM fixtures and regression checklists are captured
+- **Next:** capture old/new YouTube transcript DOM fixtures and freeze the regression checklist so the remaining legacy reference can be trimmed with confidence
+- **Validation:** `npm run check`, `npm run test:coverage`
 
 ### Session Start
 

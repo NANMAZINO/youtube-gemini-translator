@@ -249,7 +249,7 @@ export function createRuntimeEventConsumer(
     if (
       !('kind' in message) ||
       !('type' in message) ||
-      message.kind !== 'rebuild.event' ||
+      message.kind !== 'runtime.event' ||
       typeof message.type !== 'string'
     ) {
       return false;

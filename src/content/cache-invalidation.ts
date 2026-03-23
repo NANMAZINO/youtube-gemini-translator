@@ -1,7 +1,7 @@
-import type { RebuildPageMessage } from '../shared/contracts/page.ts';
+import type { RuntimePageMessage } from '../shared/contracts/page.ts';
 
 export function shouldResetSurfaceForPageMessage(
-  message: RebuildPageMessage,
+  message: RuntimePageMessage,
   currentVideoId: string | null,
 ) {
   switch (message.type) {

@@ -1,5 +1,5 @@
 export interface CacheDeletePageMessage {
-  kind: 'rebuild.page';
+  kind: 'runtime.page';
   type: 'cache.delete';
   payload: {
     cacheKey: string;
@@ -7,10 +7,10 @@ export interface CacheDeletePageMessage {
 }
 
 export interface CacheClearPageMessage {
-  kind: 'rebuild.page';
+  kind: 'runtime.page';
   type: 'cache.clear';
 }
 
-export type RebuildPageMessage =
+export type RuntimePageMessage =
   | CacheDeletePageMessage
   | CacheClearPageMessage;

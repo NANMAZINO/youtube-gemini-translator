@@ -4,7 +4,7 @@
 > 현재 런타임, 설치 방법, 메인 아키텍처는 [루트 README](../README.md), [한국어 README](../README.ko.md), 그리고 [../docs/rebuild/](../docs/rebuild/architecture.md) 아래 마이그레이션 문서를 기준으로 봐주세요.
 
 > [!NOTE]
-> 이제 `src/`가 기본 확장 런타임이며 결과물은 `dist/`에 빌드됩니다. 이 `extension/` 트리는 일반적인 개발이나 설치에서 더 이상 로드 대상이 아니며, 남아 있는 중복 구현을 정리하는 동안 회귀 비교와 참고 용도로만 유지합니다.
+> 이제 `src/`가 기본 확장 런타임이며 결과물은 `dist/`에 빌드됩니다. 이 `extension/` 트리는 일반적인 개발이나 설치에서 더 이상 로드 대상이 아니며, 레거시 동작 회귀 비교용 참고 자료로만 유지합니다.
 
 ![Docs](https://img.shields.io/badge/Docs-Legacy%20Reference-0A7EA4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
@@ -36,13 +36,12 @@ extension/
 ├── content/
 ├── core/
 ├── infrastructure/
-├── lib/
 └── popup/
 ```
 
 ## 이 폴더를 볼 때
 
-- 정리 작업 중 레거시와 현재 동작을 비교해야 할 때
+- 회귀 점검 중 레거시와 현재 동작을 비교해야 할 때
 - 예전 UI나 저장 경로가 어떻게 동작했는지 추적해야 할 때
 - `extension/`에만 남아 있는 중복 로직을 제거하려고 할 때
 

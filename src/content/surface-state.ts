@@ -7,7 +7,7 @@ import { CONTENT_UI_LABELS } from './ui-labels.ts';
 
 export type SurfaceTone = 'neutral' | 'info' | 'warning' | 'success' | 'error';
 
-export interface RebuildSurfaceState {
+export interface TranslationSurfaceState {
   panelVisible: boolean;
   overlayVisible: boolean;
   tone: SurfaceTone;
@@ -104,7 +104,7 @@ function createSurfaceControls(
 
 function createSurfaceState(
   base: Omit<
-    RebuildSurfaceState,
+    TranslationSurfaceState,
     | 'exportEnabled'
     | 'importEnabled'
     | 'importTitle'
@@ -124,7 +124,7 @@ function createSurfaceState(
       base.translations,
       isRefinedResult,
     ),
-  } satisfies RebuildSurfaceState;
+  } satisfies TranslationSurfaceState;
 }
 
 export function findActiveTranslationIndex(
@@ -145,9 +145,9 @@ export function findActiveTranslationIndex(
   return activeIndex;
 }
 
-export function projectRebuildSurfaceState(
+export function projectTranslationSurfaceState(
   input: ProjectSurfaceStateInput,
-): RebuildSurfaceState {
+): TranslationSurfaceState {
   const capability = input.capability;
   const controllerState = input.controllerState;
   const task = input.task;

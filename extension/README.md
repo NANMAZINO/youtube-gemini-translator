@@ -4,7 +4,7 @@
 > For the current runtime, setup steps, and main architecture, use the [root README](../README.md), [Korean README](../README.ko.md), and the migration docs under [../docs/rebuild/](../docs/rebuild/architecture.md).
 
 > [!NOTE]
-> `src/` is now the default extension runtime and builds into `dist/`. This `extension/` tree is no longer the load target for normal development or installation. It stays in the repository only as a regression and cleanup reference while the remaining obsolete slices are trimmed down.
+> `src/` is now the default extension runtime and builds into `dist/`. This `extension/` tree is no longer the load target for normal development or installation. It stays in the repository only as a regression reference for legacy behavior comparisons.
 
 ![Docs](https://img.shields.io/badge/Docs-Legacy%20Reference-0A7EA4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
@@ -36,13 +36,12 @@ extension/
 ├── content/
 ├── core/
 ├── infrastructure/
-├── lib/
 └── popup/
 ```
 
 ## When To Read This Folder
 
-- You are comparing legacy and current behavior during cleanup.
+- You are comparing legacy and current behavior during regression checks.
 - You need to trace how an older UI or storage path used to work.
 - You are removing duplicated logic that still survives only in `extension/`.
 

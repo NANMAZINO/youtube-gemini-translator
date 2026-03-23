@@ -102,7 +102,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
 
   async function loadSettings() {
     const response = await sendCommand<'settings.get'>({
-      kind: 'rebuild.command',
+      kind: 'runtime.command',
       type: 'settings.get',
     });
 
@@ -118,7 +118,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     targetLang: Parameters<typeof sendCommand<'cache.get'>>[0]['payload']['targetLang'],
   ) {
     const response = await sendCommand<'cache.get'>({
-      kind: 'rebuild.command',
+      kind: 'runtime.command',
       type: 'cache.get',
       payload: {
         videoId,
@@ -288,7 +288,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       const response =
         commandType === 'translation.resume'
           ? await sendCommand<'translation.resume'>({
-              kind: 'rebuild.command',
+              kind: 'runtime.command',
               type: 'translation.resume',
               payload: {
                 videoId,
@@ -299,7 +299,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
               },
             })
           : await sendCommand<'translation.start'>({
-              kind: 'rebuild.command',
+              kind: 'runtime.command',
               type: 'translation.start',
               payload: {
                 videoId,
@@ -377,7 +377,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       keepAlivePort = openKeepAlivePort();
 
       const response = await sendCommand<'refine.start'>({
-        kind: 'rebuild.command',
+        kind: 'runtime.command',
         type: 'refine.start',
         payload: {
           videoId,
@@ -432,7 +432,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       const settings = await loadSettings();
       const title = getCurrentYouTubeVideoTitle();
       const response = await sendCommand<'cache.import'>({
-        kind: 'rebuild.command',
+        kind: 'runtime.command',
         type: 'cache.import',
         payload: {
           videoId,
@@ -482,7 +482,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
 
     try {
       const response = await sendCommand<'translation.cancel'>({
-        kind: 'rebuild.command',
+        kind: 'runtime.command',
         type: 'translation.cancel',
         payload: { taskId },
       });
@@ -554,7 +554,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
 
     try {
       await sendCommand<'translation.cancel'>({
-        kind: 'rebuild.command',
+        kind: 'runtime.command',
         type: 'translation.cancel',
         payload: { taskId },
       });

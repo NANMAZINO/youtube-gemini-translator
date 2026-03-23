@@ -8,13 +8,13 @@
 - **Phase 4:** Done
 - **Phase 5:** Done
 - **Phase 6:** Done
-- **Post-cutover cleanup:** In Progress
+- **Post-cutover cleanup:** Done
 
 ## Fixed Decisions
 
 - Migration style: incremental transition
 - Source of truth for the rebuild: `src/`
-- Existing `extension/` tree remains an archived regression reference until cleanup is complete
+- Existing `extension/` tree remains an archived regression reference for behavior comparison
 - Default local workflow uses `npm run dev`, `npm run build`, and `npm run check`
 - Runtime boundary: browser-only Chrome MV3 extension
 - Primary optimization target: stability and maintainability
@@ -36,8 +36,6 @@
 
 ## Known Structural Debt To Remove
 
-- Duplicate responsibilities across `extension/content/*` and `extension/content/app|dom|flow|ui/*`
-- Legacy `extension/lib/*` stack overlapping with `extension/core/*` and `extension/infrastructure/*`
 - Untyped runtime message contracts between popup, content script, and background
 - Business rules mixed with DOM traversal and rendering concerns
 - No modern TypeScript build pipeline or typed manifest generation
@@ -51,8 +49,8 @@
 - [x] Create `docs/rebuild/progress.md`
 - [x] Add rebuild notice to root README
 - [x] Add rebuild notice to technical README
-- [ ] Capture old/new YouTube transcript DOM fixtures
-- [ ] Freeze regression checklist for transcript DOM changes
+- [x] Capture old/new YouTube transcript DOM fixtures
+- [x] Freeze regression checklist for transcript DOM changes
 
 ### Phase 2. Tooling and Type System
 
@@ -61,7 +59,7 @@
 - [x] Introduce typed manifest scaffold
 - [x] Define typed runtime command/event contracts
 - [x] Define shared core models (`Settings`, `TranscriptSegment`, `CacheRecord`, `UsageSummary`, `ExportBundle`)
-- [ ] Add CI-ready `npm run check` gate to workflow/automation
+- [x] Add CI-ready `npm run check` gate to workflow/automation
 
 ### Phase 3. Pure Domain Rebuild
 
@@ -97,9 +95,9 @@
 
 ## Post-cutover Cleanup Backlog
 
-- [ ] Remove `extension/lib/*` and other obsolete duplicate entrypoints
-- [ ] Capture old/new YouTube transcript DOM fixtures
-- [ ] Freeze regression checklist for transcript DOM changes
+- [x] Remove `extension/lib/*` and other obsolete duplicate entrypoints
+- [x] Capture old/new YouTube transcript DOM fixtures
+- [x] Freeze regression checklist for transcript DOM changes
 
 ## Regression Checklist Targets
 

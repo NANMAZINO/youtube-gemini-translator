@@ -11,22 +11,22 @@ import {
   createPreviewController,
   type PreviewControllerState,
 } from './preview-controller.ts';
-import { createRebuildSurface } from './rebuild-surface.ts';
-import { REBUILD_META } from '../shared/rebuild-meta.ts';
+import { createTranslationSurface } from './translation-surface.ts';
+import { RUNTIME_META } from '../shared/runtime-meta.ts';
 import {
   createInitialRuntimeTaskProjection,
   createRuntimeEventConsumer,
 } from './runtime-event-consumer.ts';
-import { projectRebuildSurfaceState } from './surface-state.ts';
-import { isRebuildPageMessage } from '../shared/messaging.ts';
+import { projectTranslationSurfaceState } from './surface-state.ts';
+import { isRuntimePageMessage } from '../shared/messaging.ts';
 
 declare global {
   interface Window {
-    __YT_AI_REBUILD_CONTENT__?: boolean;
-    __YT_AI_REBUILD_RUNTIME_PROJECTION__?: RuntimeTaskProjection;
-    __YT_AI_REBUILD_RUNTIME_LISTENER__?: boolean;
-    __YT_AI_REBUILD_PAGE_MESSAGE_LISTENER__?: boolean;
-    __YT_AI_REBUILD_TRANSCRIPT_DOM_OBSERVER__?: boolean;
+    __YT_AI_CONTENT_RUNTIME__?: boolean;
+    __YT_AI_RUNTIME_PROJECTION__?: RuntimeTaskProjection;
+    __YT_AI_RUNTIME_LISTENER__?: boolean;
+    __YT_AI_PAGE_MESSAGE_LISTENER__?: boolean;
+    __YT_AI_TRANSCRIPT_DOM_OBSERVER__?: boolean;
   }
 }
 
@@ -41,7 +41,7 @@ function getDisplayedTranslations() {
 }
 
 function resetRuntimeProjection() {
-  window.__YT_AI_REBUILD_RUNTIME_PROJECTION__ =
+  window.__YT_AI_RUNTIME_PROJECTION__ =
     createInitialRuntimeTaskProjection();
 }
 
@@ -70,7 +70,7 @@ const previewController = createPreviewController({
   },
 });
 
-const rebuildSurface = createRebuildSurface({
+const translationSurface = createTranslationSurface({
   onExport(translations) {
     downloadBundle(translations);
   },
@@ -100,7 +100,7 @@ const actionControls = createContentActionControls({
     void previewController.cancelActiveTask(task);
   },
   getSurfaceActionElements() {
-    return rebuildSurface.getPanelActionElements();
+    return translationSurface.getPanelActionElements();
   },
 });
 
@@ -113,8 +113,8 @@ function renderAll() {
     task: currentTask,
   });
 
-  rebuildSurface.render(
-    projectRebuildSurfaceState({
+  translationSurface.render(
+    projectTranslationSurfaceState({
       capability: currentYouTubeCapability,
       controllerState,
       task: currentTask,
@@ -136,12 +136,12 @@ function clearCurrentSurfaceState(statusMessage: string | null = null) {
   previewController.clearSurface(statusMessage);
 }
 
-if (!window.__YT_AI_REBUILD_CONTENT__) {
-  window.__YT_AI_REBUILD_CONTENT__ = true;
+if (!window.__YT_AI_CONTENT_RUNTIME__) {
+  window.__YT_AI_CONTENT_RUNTIME__ = true;
   resetRuntimeProjection();
 
   console.info(
-    `[YT AI Translator] Content runtime active on YouTube (${REBUILD_META.phase}: ${REBUILD_META.title})`,
+    `[YT AI Translator] Content runtime active on YouTube (${RUNTIME_META.phase}: ${RUNTIME_META.title})`,
   );
 
   currentTask = null;
@@ -158,8 +158,8 @@ if (!window.__YT_AI_REBUILD_CONTENT__) {
   });
 }
 
-if (!window.__YT_AI_REBUILD_RUNTIME_LISTENER__) {
-  window.__YT_AI_REBUILD_RUNTIME_LISTENER__ = true;
+if (!window.__YT_AI_RUNTIME_LISTENER__) {
+  window.__YT_AI_RUNTIME_LISTENER__ = true;
 
   const runtimeConsumer = createRuntimeEventConsumer({
     onTaskUpdated(task, projection) {
@@ -175,7 +175,7 @@ if (!window.__YT_AI_REBUILD_RUNTIME_LISTENER__) {
 
       currentTask = task;
       previewController.handleTaskUpdated(task);
-      window.__YT_AI_REBUILD_RUNTIME_PROJECTION__ = projection;
+      window.__YT_AI_RUNTIME_PROJECTION__ = projection;
       renderAll();
 
       console.info(
@@ -191,11 +191,11 @@ if (!window.__YT_AI_REBUILD_RUNTIME_LISTENER__) {
   );
 }
 
-if (!window.__YT_AI_REBUILD_PAGE_MESSAGE_LISTENER__) {
-  window.__YT_AI_REBUILD_PAGE_MESSAGE_LISTENER__ = true;
+if (!window.__YT_AI_PAGE_MESSAGE_LISTENER__) {
+  window.__YT_AI_PAGE_MESSAGE_LISTENER__ = true;
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (!isRebuildPageMessage(message)) {
+    if (!isRuntimePageMessage(message)) {
       return false;
     }
 
@@ -207,8 +207,8 @@ if (!window.__YT_AI_REBUILD_PAGE_MESSAGE_LISTENER__) {
   });
 }
 
-if (!window.__YT_AI_REBUILD_TRANSCRIPT_DOM_OBSERVER__) {
-  window.__YT_AI_REBUILD_TRANSCRIPT_DOM_OBSERVER__ = true;
+if (!window.__YT_AI_TRANSCRIPT_DOM_OBSERVER__) {
+  window.__YT_AI_TRANSCRIPT_DOM_OBSERVER__ = true;
 
   watchTranscriptDomCapability({
     onChange(capability) {

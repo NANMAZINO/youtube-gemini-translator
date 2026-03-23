@@ -7,7 +7,7 @@ test('cache.clear always resets the current page surface', () => {
   assert.equal(
     shouldResetSurfaceForPageMessage(
       {
-        kind: 'rebuild.page',
+        kind: 'runtime.page',
         type: 'cache.clear',
       },
       'abc123',
@@ -20,7 +20,7 @@ test('cache.delete resets the surface when the current video cache key matches',
   assert.equal(
     shouldResetSurfaceForPageMessage(
       {
-        kind: 'rebuild.page',
+        kind: 'runtime.page',
         type: 'cache.delete',
         payload: { cacheKey: 'abc123_ko' },
       },
@@ -34,7 +34,7 @@ test('cache.delete ignores cache keys for other videos', () => {
   assert.equal(
     shouldResetSurfaceForPageMessage(
       {
-        kind: 'rebuild.page',
+        kind: 'runtime.page',
         type: 'cache.delete',
         payload: { cacheKey: 'other456_ko' },
       },

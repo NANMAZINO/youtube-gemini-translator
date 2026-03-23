@@ -9,7 +9,7 @@
 ![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
-`src/` is now the main extension runtime. `npm run build` produces the loadable `dist/` artifact, and the retained `extension/` tree is kept only as a legacy reference while cleanup continues.
+`src/` is now the main extension runtime. `npm run build` produces the loadable `dist/` artifact, and the retained `extension/` tree is kept only as a minimal legacy reference for regression comparison.
 
 ## What It Does
 
@@ -58,8 +58,8 @@ The key is stored in `chrome.storage.local` in obfuscated form, and requests go 
 
 - `src/`: main TypeScript/Vite runtime
 - `dist/`: built Chrome extension artifact
-- `docs/rebuild/`: migration plan, architecture snapshot, and progress history
-- `extension/`: archived legacy runtime reference during cleanup
+- `docs/rebuild/`: migration plan, architecture snapshot, progress history, and transcript regression checklist
+- `extension/`: archived legacy runtime reference for regression comparison
 
 ## Development
 
@@ -78,7 +78,7 @@ npm run test:coverage
 
 - The TypeScript/Vite runtime under `src/` is the default implementation.
 - The extension should be loaded from `dist/`, not from `extension/`.
-- The retained `extension/` tree exists only to compare behavior during cleanup work.
+- The retained `extension/` tree exists only as a legacy behavior reference.
 - Manual browser verification still matters when changing YouTube DOM handling or overlay behavior.
 
 ## Limitations

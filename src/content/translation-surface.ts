@@ -6,11 +6,11 @@ import {
 import { CONTENT_UI_LABELS } from './ui-labels.ts';
 import {
   findActiveTranslationIndex,
-  type RebuildSurfaceState,
+  type TranslationSurfaceState,
 } from './surface-state.ts';
 
-const SURFACE_HOST_ID = 'yt-ai-rebuild-surface-host';
-const OVERLAY_HOST_ID = 'yt-ai-rebuild-overlay-host';
+const SURFACE_HOST_ID = 'yt-ai-translation-surface-host';
+const OVERLAY_HOST_ID = 'yt-ai-translation-overlay-host';
 const DEFAULT_OVERLAY_FONT_SIZE_PX = 22;
 
 interface SurfaceElements {
@@ -32,7 +32,7 @@ interface OverlayElements {
   text: HTMLDivElement;
 }
 
-interface RebuildSurfaceOptions {
+interface TranslationSurfaceOptions {
   onExport: (translations: TranslationChunk[]) => void;
   onImportFile: (file: File) => void | Promise<void>;
   onStartRefine: () => void;
@@ -45,7 +45,7 @@ function parseSeconds(timestamp: string) {
     .reduce((total, part) => total * 60 + part, 0);
 }
 
-export function createRebuildSurface(options: RebuildSurfaceOptions) {
+export function createTranslationSurface(options: TranslationSurfaceOptions) {
   let currentTranslations: TranslationChunk[] = [];
   let lastActiveIndex = -1;
   let syncedVideo: HTMLVideoElement | null = null;
@@ -812,7 +812,7 @@ export function createRebuildSurface(options: RebuildSurfaceOptions) {
     });
   }
 
-  function render(state: RebuildSurfaceState) {
+  function render(state: TranslationSurfaceState) {
     const panel = ensurePanelElements();
 
     if (panel) {
