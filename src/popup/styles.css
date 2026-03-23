@@ -1,0 +1,634 @@
+/* ───────────────────────────────────────────────── */
+/* 디자인 시스템: Google Material 3 + Apple HIG 하이브리드 */
+/* ───────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── 라이트 테마 토큰 ── */
+:root {
+  color-scheme: light;
+
+  /* 서피스 */
+  --bg: #f2f4f8;
+  --bg-depth: #eaecf2;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-strong: rgba(255, 255, 255, 0.94);
+  --panel-soft: rgba(248, 249, 252, 0.76);
+  --panel-hover: rgba(255, 255, 255, 0.96);
+
+  /* 보더 */
+  --line: rgba(0, 0, 0, 0.06);
+  --line-strong: rgba(66, 133, 244, 0.22);
+
+  /* 텍스트 */
+  --text: #1a1a2e;
+  --text-secondary: #5f6368;
+  --text-tertiary: #80868b;
+
+  /* 구글 블루 액센트 */
+  --accent: #4285f4;
+  --accent-strong: #1a73e8;
+  --accent-soft: rgba(66, 133, 244, 0.1);
+  --accent-surface: rgba(66, 133, 244, 0.06);
+
+  /* 시멘틱 */
+  --success: #34a853;
+  --success-soft: rgba(52, 168, 83, 0.1);
+  --error: #ea4335;
+  --error-soft: rgba(234, 67, 53, 0.1);
+
+  /* 그림자 — 애플 스타일 다층 섀도 */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* 모션 */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 240ms;
+
+  /* 형태 */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+}
+
+/* ── 다크 테마 토큰 ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #1a1a2e;
+    --bg-depth: #151525;
+    --panel: rgba(30, 30, 48, 0.82);
+    --panel-strong: rgba(38, 38, 58, 0.94);
+    --panel-soft: rgba(26, 26, 42, 0.76);
+    --panel-hover: rgba(44, 44, 66, 0.96);
+
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(138, 180, 248, 0.24);
+
+    --text: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --text-tertiary: #6b7280;
+
+    --accent: #8ab4f8;
+    --accent-strong: #669df6;
+    --accent-soft: rgba(138, 180, 248, 0.14);
+    --accent-surface: rgba(138, 180, 248, 0.06);
+
+    --success: #81c995;
+    --success-soft: rgba(129, 201, 149, 0.14);
+    --error: #f28b82;
+    --error-soft: rgba(242, 139, 130, 0.14);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.16);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.36), 0 2px 8px rgba(0, 0, 0, 0.24);
+  }
+}
+
+/* ── 리셋 ── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  width: 100%;
+  max-width: 392px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+main {
+  display: block;
+}
+
+/* ── 쉘 레이아웃 ── */
+.shell {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+/* ── 공통 카드/패널 베이스 ── */
+.hero,
+.card,
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  transition:
+    box-shadow var(--duration-normal) var(--ease-out),
+    border-color var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+
+/* 카드 위 미세한 내부 글로우 — 유리질 강화 */
+.hero::before,
+.card::before,
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+/* ── 히어로 ── */
+.hero {
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  background:
+    linear-gradient(135deg, var(--accent-soft) 0%, transparent 60%),
+    var(--panel);
+}
+
+.hero-copy,
+.card-header {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.hero h1,
+.card h2 {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+.hero h1 {
+  font-size: 17px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.card h2 {
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.card-header p,
+.hint,
+.cache-meta,
+.cache-detail,
+.empty-state {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* ── 버전 뱃지 — 구글 칩 스타일 ── */
+.version {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  border: 1px solid var(--line-strong);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── 카드 ── */
+.card {
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.card.muted {
+  background: var(--panel-soft);
+}
+
+/* ── 설정 그리드 ── */
+.settings-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+}
+
+/* ── 라벨 ── */
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+/* ── 폼 컨트롤 공통 ── */
+select,
+input,
+button {
+  font: inherit;
+}
+
+select,
+input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  color: var(--text);
+  font-size: 13px;
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+select:hover,
+input:hover {
+  border-color: var(--line-strong);
+}
+
+select:focus,
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 커스텀 select 화살표 */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%235f6368' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+}
+
+/* ── 토글 스위치 — iOS / Material 하이브리드 ── */
+.toggle {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 26px;
+  min-height: 26px;
+  border-radius: 13px;
+  border: none;
+  padding: 0;
+  background: var(--text-tertiary);
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition:
+    background var(--duration-normal) var(--ease-out);
+}
+
+.toggle input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition:
+    transform var(--duration-normal) var(--ease-spring);
+}
+
+.toggle input[type="checkbox"]:checked {
+  background: var(--accent);
+}
+
+.toggle input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+
+.toggle input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 버튼 ── */
+button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    transform var(--duration-normal) var(--ease-spring),
+    box-shadow var(--duration-normal) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* 프라이머리 — 구글 블루 그라디언트 */
+.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  box-shadow:
+    0 4px 14px rgba(66, 133, 244, 0.3),
+    0 1px 3px rgba(66, 133, 244, 0.2);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(66, 133, 244, 0.35),
+    0 2px 6px rgba(66, 133, 244, 0.2);
+}
+
+/* 세컨더리 — 애플 스타일 아웃라인 */
+.secondary {
+  border-color: var(--line);
+  background: var(--panel-strong);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+
+.secondary:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  background: var(--panel-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 입력 행 ── */
+.input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+/* ── 버튼 행 ── */
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
+.button-row > button {
+  flex: 1;
+}
+
+/* ── 힌트 텍스트 ── */
+.hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.hint a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity var(--duration-fast);
+}
+
+.hint a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ── 통계 그리드 ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat-card {
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  cursor: default;
+}
+
+.stat-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.stat-label {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stat-card strong {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+/* ── 캐시 리스트 ── */
+.cache-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+/* 커스텀 스크롤바 — 얇고 미니멀 */
+.cache-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cache-list::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--text-tertiary);
+  opacity: 0.4;
+}
+
+.cache-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 캐시 아이템 카드 */
+.cache-item {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+
+.cache-item:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-0.5px);
+}
+
+.cache-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cache-item strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cache-item span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.cache-delete {
+  padding: 6px 12px;
+  min-height: 32px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── 상태 바 ── */
+.status {
+  min-height: 20px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--duration-fast);
+}
+
+.status.success {
+  color: var(--success);
+}
+
+.status.error {
+  color: var(--error);
+}
+
+/* ── 반응형 ── */
+@media (max-width: 360px) {
+  .shell {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .hero {
+    flex-wrap: wrap;
+  }
+
+  .version {
+    margin-left: auto;
+  }
+
+  .button-row {
+    flex-direction: column;
+  }
+
+  .cache-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cache-delete {
+    width: 100%;
+  }
+}
+
+/* ── 접근성: 모션 감소 설정 존중 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

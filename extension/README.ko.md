@@ -3,6 +3,9 @@
 > Gemini 3 Flash Preview 기반 YouTube 자막 번역 확장 프로그램의 기술 문서입니다.  
 > 일반 사용자용 안내는 [English README](../README.md) 또는 [한국어 README](../README.ko.md)를 참고하세요.
 
+> [!NOTE]
+> `src/` 기반 TypeScript/Vite 런타임이 이제 기본 확장 경로이며 결과물은 `dist/`에 빌드됩니다. 이 문서는 Phase 6 정리 동안 남아 있는 `extension/` 구현을 참고하기 위한 레거시 문서입니다. 기준 문서는 [../docs/rebuild/plan.md](../docs/rebuild/plan.md), [../docs/rebuild/architecture.md](../docs/rebuild/architecture.md), [../docs/rebuild/progress.md](../docs/rebuild/progress.md)입니다.
+
 ![Docs](https://img.shields.io/badge/Docs-Technical-0A7EA4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
@@ -19,7 +22,13 @@
 - **🗂️ 로컬 캐시**: `chrome.storage.local`에 최대 100개의 번역 결과를 30일 TTL로 저장합니다.
 - **📊 토큰 사용량 기록**: 팝업에서 오늘과 최근 30일 기준 입력·출력 토큰 사용량을 집계합니다.
 
-## 파일 구조
+## 현재 기본 런타임
+
+- 기본 빌드 산출물: `dist/`
+- 기본 소스 오브 트루스: `src/`
+- 임시 유지 중인 레거시 참고 경로: `extension/`
+
+## 레거시 파일 구조
 
 ```text
 extension/
