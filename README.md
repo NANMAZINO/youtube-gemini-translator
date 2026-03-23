@@ -1,90 +1,153 @@
-[README in Korean](README.ko.md) · [Docs Overview](docs/README.md) · [Architecture Snapshot](docs/architecture.md) · [Transcript Regression Checklist](docs/transcript-regression-checklist.md)
+<p align="right">
+  <a href="README.ko.md">한국어</a>
+</p>
 
-# YouTube AI Translator
+<h1 align="center">YouTube AI Translator</h1>
 
-> Chrome extension for context-aware YouTube caption translation with Gemini.
+<p align="center">
+  <strong>Context-aware YouTube caption translation powered by Gemini — right inside your browser.</strong>
+</p>
 
-![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini" />
+</p>
 
-`extension/` is now the main extension runtime source tree. `npm run build` produces the loadable `dist/` artifact.
+<p align="center">
+  <a href="docs/development.md">Development Guide</a> · <a href="docs/architecture.md">Architecture</a> · <a href="docs/transcript-regression-checklist.md">Regression Checklist</a>
+</p>
 
-## What It Does
+---
 
-- Reads YouTube transcript segments and translates them with surrounding context in mind.
-- Injects transcript-aware controls directly into the YouTube watch page.
-- Shows translated output in both the transcript surface and the on-video overlay.
-- Supports resume mode, refine, JSON export/import, cache management, and usage tracking.
-- Stores the Gemini API key locally in the popup instead of relying on a relay server.
+## ✨ What It Does
 
-## Quick Start
+Unlike simple subtitle translators that process captions line-by-line, this extension groups YouTube transcript segments into **context-aware chunks** and translates them through the Gemini API — preserving meaning that spans across multiple segments.
 
-### 1. Install the extension
+Translations appear in **two surfaces simultaneously**: the transcript panel beside the video and a draggable in-video overlay that syncs with playback.
 
-1. Clone or download this repository.
-2. Run `npm install`.
-3. Run `npm run build`.
-4. Open `chrome://extensions` in Chrome.
-5. Enable `Developer mode`.
-6. Click `Load unpacked` and select this repository's `dist/` folder.
+## 🎯 Key Features
 
-### 2. Add your Gemini API key
+| Feature | Description |
+|---|---|
+| **Context-Aware Translation** | Groups transcript segments into chunks for coherent, contextual translation |
+| **Dual Output** | Translated transcript panel + synced in-video subtitle overlay |
+| **Resume Mode** | Picks up where you left off after interruptions or page refreshes |
+| **Refine** | Re-translate the current bundle with adjusted settings without losing rows |
+| **Export / Import** | Save and restore translation bundles as JSON |
+| **Cache Management** | Per-video cache with popup controls for delete, clear, and usage stats |
+| **Local API Key** | Stored locally in obfuscated form — no relay server, no external auth |
 
-1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
-2. Open the extension popup from the Chrome toolbar.
-3. Paste the key and save it.
-
-The key is stored in `chrome.storage.local` in obfuscated form, and requests go directly from the browser to the Gemini API.
-
-### 3. Translate a video
-
-1. Open a YouTube video with captions.
-2. Click `Open Transcript` near the watch-page actions.
-3. Click `Translate` inside the transcript panel.
-4. Use `Refine`, `Export`, or `Import` when you need post-processing or bundle reuse.
-
-## Main Features
-
-- Context-aware translation across caption chunks
-- Resume mode for interrupted work
-- Local translation cache with popup management
-- Token usage and estimated cost summaries
-- On-video overlay with drag, resize, and reset interactions
-- JSON bundle export/import for translated subtitles
-
-## Repository Map
-
-- `extension/`: main TypeScript/Vite runtime source
-- `dist/`: built Chrome extension artifact
-- `docs/`: current runtime docs
-
-## Development
+## 🚀 Quick Start
 
 ```bash
+git clone https://github.com/your-username/yg-translator.git
+cd yg-translator
 npm install
-npm run dev
 npm run build
-npm run check
-npm test
-npm run test:coverage
 ```
 
-`npm run check` runs the full local quality gate: typecheck, tests, and production build.
+1. Open **`chrome://extensions`** → enable **Developer mode**
+2. Click **Load unpacked** → select the `dist/` folder
+3. Click the extension icon → save your Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
+4. Open any YouTube video with captions → **Open Transcript** → **Translate**
 
-## Current Status
+> [!TIP]
+> The API key is stored in `chrome.storage.local` in obfuscated form. All Gemini requests go directly from your browser — nothing passes through an external server.
 
-- The TypeScript/Vite runtime under `extension/` is the default implementation.
-- The extension should be loaded from `dist/`, not directly from `extension/`.
-- Manual browser verification still matters when changing YouTube DOM handling or overlay behavior.
+## 🏗️ How It Works
 
-## Limitations
+```mermaid
+flowchart TB
+  subgraph page["YouTube Watch Page — Content Script"]
+    detect["Transcript Detection"]
+    panel["Translation Panel"]
+    overlay["Subtitle Overlay\n(drag · resize)"]
+  end
 
-- It only works on videos with available YouTube captions.
-- Gemini quota, overload, or service errors can still surface as `403`, `429`, or `503` failures.
-- Installation currently assumes Chrome Developer Mode.
+  subgraph bg["Background Service Worker"]
+    router["Command Router"]
+    orch["Translation Orchestrator"]
+    retry["Retry / Cancel / Keep-Alive"]
+    gemini["Gemini Adapter"]
+  end
 
-## Contact
+  subgraph popup["Popup"]
+    settings["Settings · Cache · Usage Stats"]
+  end
+
+  storage[("chrome.storage.local\nAPI key · settings\ncache · usage history")]
+  api["Gemini API\ngenerativelanguage.googleapis.com"]
+
+  detect --> orch
+  orch --> panel
+  orch --> overlay
+  router --> orch
+  orch --> retry
+  orch --> gemini
+  gemini --> api
+  settings --> storage
+  router --> storage
+```
+
+## 📂 Project Structure
+
+```
+yg-translator/
+├── extension/                # Source of truth
+│   ├── adapters/             # External boundary adapters
+│   │   ├── gemini/           #   Gemini API request/response
+│   │   ├── storage/          #   Chrome storage access
+│   │   └── youtube/          #   YouTube DOM strategies & fixtures
+│   ├── background/           # Service worker — command router & task orchestration
+│   ├── content/              # Content script — panel, overlay, surface state
+│   ├── domain/               # Pure logic — chunking, retry, resume, usage
+│   │   ├── resume/
+│   │   ├── retry/
+│   │   ├── transcript/
+│   │   └── usage/
+│   ├── popup/                # Extension popup — settings, cache, API key
+│   └── shared/               # Typed contracts & messaging
+│       └── contracts/
+├── dist/                     # Built Chrome extension (load this in Chrome)
+├── docs/                     # Technical documentation
+│   ├── architecture.md
+│   ├── development.md
+│   └── transcript-regression-checklist.md
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
+```
+
+## 🛠️ Development
+
+```bash
+npm run dev              # Vite dev server
+npm run build            # Production build → dist/
+npm run typecheck        # tsc --noEmit
+npm test                 # Node built-in test runner
+npm run check            # Full local gate: typecheck + test + build
+npm run test:coverage    # Coverage gate for key runtime modules
+```
+
+> [!IMPORTANT]
+> After DOM-sensitive changes (transcript detection, overlay behavior, popup flows), always load `dist/` in Chrome for manual verification. See the [Regression Checklist](docs/transcript-regression-checklist.md) for details.
+
+## 📖 Documentation
+
+| Document | What it covers |
+|---|---|
+| [Development Guide](docs/development.md) | Local commands, build output, extension loading, validation flow |
+| [Architecture Snapshot](docs/architecture.md) | Runtime boundaries, typed contracts, storage compatibility, UI constraints |
+| [Transcript Regression Checklist](docs/transcript-regression-checklist.md) | Fixture anchors and manual browser checks for YouTube DOM-sensitive work |
+
+## ⚠️ Limitations
+
+- Only works on videos with available YouTube captions
+- Gemini quota, overload, or service errors may surface as `403`, `429`, or `503` failures
+- Installation requires Chrome Developer Mode
+
+## 📬 Contact
 
 `imxtraa7@gmail.com`

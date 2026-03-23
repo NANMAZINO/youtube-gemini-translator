@@ -1,90 +1,153 @@
-[English README](README.md) · [문서 개요](docs/README.ko.md) · [아키텍처 스냅샷](docs/architecture.md) · [Transcript 회귀 체크리스트](docs/transcript-regression-checklist.md)
+<p align="right">
+  <a href="README.md">English</a>
+</p>
 
-# YouTube AI Translator
+<h1 align="center">YouTube AI Translator</h1>
 
-> Gemini 기반으로 YouTube 자막을 문맥까지 고려해 번역하는 Chrome 확장 프로그램입니다.
+<p align="center">
+  <strong>Gemini 기반 문맥 인식 YouTube 자막 번역 — 브라우저에서 바로 작동합니다.</strong>
+</p>
 
-![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini" />
+</p>
 
-이제 `extension/`이 메인 확장 런타임 소스 트리이며, `npm run build` 결과물인 `dist/`를 Chrome에 로드하면 됩니다.
+<p align="center">
+  <a href="docs/development.ko.md">개발 가이드</a> · <a href="docs/architecture.ko.md">아키텍처</a> · <a href="docs/transcript-regression-checklist.ko.md">회귀 체크리스트</a>
+</p>
 
-## 무엇을 하나요
+---
 
-- YouTube transcript를 읽고 앞뒤 문맥을 반영해 자막을 번역합니다.
-- YouTube 시청 페이지 안에 transcript 기반 제어 버튼을 직접 주입합니다.
-- 번역 결과를 transcript surface와 영상 오버레이에 함께 표시합니다.
-- 이어받기, 재분할, JSON 내보내기/가져오기, 캐시 관리, 사용량 확인을 지원합니다.
-- Gemini API Key는 중계 서버 없이 팝업에서 로컬로 관리합니다.
+## ✨ 어떤 확장인가요
 
-## 빠른 시작
+일반 자막 번역기가 한 줄씩 처리하는 것과 달리, 이 확장은 YouTube transcript 세그먼트를 **문맥 단위 청크**로 묶어 Gemini API로 번역합니다 — 여러 세그먼트에 걸친 의미가 보존됩니다.
 
-### 1. 확장 프로그램 설치
+번역 결과는 **두 곳에 동시에** 표시됩니다: 동영상 옆 transcript 패널과 재생에 동기화되는 드래그 가능한 영상 내 오버레이.
 
-1. 이 저장소를 클론하거나 다운로드합니다.
-2. `npm install`을 실행합니다.
-3. `npm run build`를 실행합니다.
-4. Chrome에서 `chrome://extensions`를 엽니다.
-5. `개발자 모드`를 켭니다.
-6. `압축해제된 확장 프로그램을 로드합니다`를 눌러 이 저장소의 `dist/` 폴더를 선택합니다.
+## 🎯 주요 기능
 
-### 2. Gemini API Key 등록
+| 기능 | 설명 |
+|---|---|
+| **문맥 인식 번역** | transcript 세그먼트를 청크로 묶어 일관된 문맥 번역 수행 |
+| **이중 출력** | 번역된 transcript 패널 + 동기화되는 영상 내 자막 오버레이 |
+| **이어받기 (Resume)** | 중단된 번역을 페이지 새로고침 후에도 이어서 실행 |
+| **재번역 (Refine)** | 설정을 바꿔 현재 번들을 행 손실 없이 다시 번역 |
+| **내보내기 / 가져오기** | 번역 번들을 JSON으로 저장하고 복원 |
+| **캐시 관리** | 동영상별 캐시, 팝업에서 삭제·초기화·사용량 통계 확인 |
+| **로컬 API Key** | 난독화 저장 — 중계 서버 없음, 외부 인증 없음 |
 
-1. [Google AI Studio](https://aistudio.google.com/apikey)에서 API Key를 생성합니다.
-2. Chrome 툴바에서 확장 프로그램 팝업을 엽니다.
-3. 키를 붙여넣고 저장합니다.
-
-키는 `chrome.storage.local`에 난독화된 형태로 저장되며, 요청은 브라우저에서 Gemini API로 직접 전송됩니다.
-
-### 3. 영상 번역 시작
-
-1. 자막이 있는 YouTube 영상을 엽니다.
-2. 시청 페이지 액션 영역의 `Open Transcript`를 누릅니다.
-3. transcript 패널 안에서 `Translate`를 누릅니다.
-4. 후처리나 재사용이 필요하면 `Refine`, `Export`, `Import`를 사용합니다.
-
-## 주요 기능
-
-- 자막 청크 간 문맥을 유지하는 번역
-- 중단된 작업을 잇는 Resume Mode
-- 팝업에서 관리하는 로컬 번역 캐시
-- 토큰 사용량 및 예상 비용 요약
-- 드래그, 크기 조절, 위치 초기화를 지원하는 영상 오버레이
-- 번역 자막용 JSON 번들 내보내기/가져오기
-
-## 저장소 구조
-
-- `extension/`: 메인 TypeScript/Vite 런타임 소스
-- `dist/`: Chrome에 로드할 빌드 결과물
-- `docs/`: 현재 런타임 문서
-
-## 개발
+## 🚀 빠른 시작
 
 ```bash
+git clone https://github.com/your-username/yg-translator.git
+cd yg-translator
 npm install
-npm run dev
 npm run build
-npm run check
-npm test
-npm run test:coverage
 ```
 
-`npm run check`는 타입 검사, 테스트, 프로덕션 빌드를 한 번에 실행하는 기본 검증 명령입니다.
+1. **`chrome://extensions`** 열기 → **개발자 모드** 켜기
+2. **압축해제된 확장 프로그램을 로드합니다** → `dist/` 폴더 선택
+3. 확장 아이콘 클릭 → [Google AI Studio](https://aistudio.google.com/apikey)에서 만든 Gemini API Key 저장
+4. 자막이 있는 YouTube 영상 열기 → **Open Transcript** → **Translate**
 
-## 현재 상태
+> [!TIP]
+> API Key는 `chrome.storage.local`에 난독화 형태로 저장됩니다. 모든 Gemini 요청은 브라우저에서 직접 전송되며, 외부 서버를 경유하지 않습니다.
 
-- `extension/` 기반 TypeScript/Vite 런타임이 기본 구현입니다.
-- Chrome에는 `extension/`이 아니라 `dist/` 결과물을 로드해야 합니다.
-- YouTube DOM 처리나 오버레이 동작을 바꿀 때는 실제 브라우저 수동 검증이 여전히 중요합니다.
+## 🏗️ 동작 방식
 
-## 제한 사항
+```mermaid
+flowchart TB
+  subgraph page["YouTube 시청 페이지 — Content Script"]
+    detect["Transcript 감지"]
+    panel["번역 패널"]
+    overlay["자막 오버레이\n(드래그 · 리사이즈)"]
+  end
 
-- YouTube 자막이 제공되는 영상에서만 동작합니다.
-- Gemini 할당량 또는 서비스 상태에 따라 `403`, `429`, `503` 오류가 발생할 수 있습니다.
-- 현재 설치 방식은 Chrome 개발자 모드를 전제로 합니다.
+  subgraph bg["Background Service Worker"]
+    router["커맨드 라우터"]
+    orch["번역 오케스트레이터"]
+    retry["재시도 / 취소 / Keep-Alive"]
+    gemini["Gemini Adapter"]
+  end
 
-## 연락처
+  subgraph popup["Popup"]
+    settings["설정 · 캐시 · 사용량 통계"]
+  end
+
+  storage[("chrome.storage.local\nAPI key · 설정\n캐시 · 사용 이력")]
+  api["Gemini API\ngenerativelanguage.googleapis.com"]
+
+  detect --> orch
+  orch --> panel
+  orch --> overlay
+  router --> orch
+  orch --> retry
+  orch --> gemini
+  gemini --> api
+  settings --> storage
+  router --> storage
+```
+
+## 📂 프로젝트 구조
+
+```
+yg-translator/
+├── extension/                # 기준 소스
+│   ├── adapters/             # 외부 경계 어댑터
+│   │   ├── gemini/           #   Gemini API 요청/응답
+│   │   ├── storage/          #   Chrome storage 접근
+│   │   └── youtube/          #   YouTube DOM 전략 & fixture
+│   ├── background/           # Service worker — 커맨드 라우터 & 태스크 오케스트레이션
+│   ├── content/              # Content script — 패널, 오버레이, 표면 상태
+│   ├── domain/               # 순수 로직 — 청킹, 재시도, 이어받기, 사용량
+│   │   ├── resume/
+│   │   ├── retry/
+│   │   ├── transcript/
+│   │   └── usage/
+│   ├── popup/                # 확장 팝업 — 설정, 캐시, API key
+│   └── shared/               # 타입 기반 계약 & 메시징
+│       └── contracts/
+├── dist/                     # 빌드된 Chrome 확장 (Chrome에 이것을 로드)
+├── docs/                     # 기술 문서
+│   ├── architecture.ko.md
+│   ├── development.ko.md
+│   └── transcript-regression-checklist.ko.md
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
+```
+
+## 🛠️ 개발
+
+```bash
+npm run dev              # Vite 개발 서버
+npm run build            # 프로덕션 빌드 → dist/
+npm run typecheck        # tsc --noEmit
+npm test                 # Node 내장 테스트 러너
+npm run check            # 전체 검증: typecheck + test + build
+npm run test:coverage    # 핵심 런타임 모듈 coverage 게이트
+```
+
+> [!IMPORTANT]
+> DOM 민감 변경(transcript 감지, 오버레이 동작, 팝업 흐름) 후에는 반드시 `dist/`를 Chrome에 로드해서 수동 검증합니다. 자세한 내용은 [회귀 체크리스트](docs/transcript-regression-checklist.ko.md)를 참조하세요.
+
+## 📖 문서
+
+| 문서 | 내용 |
+|---|---|
+| [개발 가이드](docs/development.ko.md) | 로컬 명령, 빌드 결과물, 확장 로드, 검증 흐름 |
+| [아키텍처 스냅샷](docs/architecture.ko.md) | 런타임 경계, 타입 기반 계약, 스토리지 호환, UI 제약 |
+| [Transcript 회귀 체크리스트](docs/transcript-regression-checklist.ko.md) | Fixture 기준점과 YouTube DOM 민감 작업용 수동 브라우저 점검 |
+
+## ⚠️ 제한 사항
+
+- YouTube 자막이 제공되는 영상에서만 동작합니다
+- Gemini 할당량 또는 서비스 상태에 따라 `403`, `429`, `503` 오류가 발생할 수 있습니다
+- 설치 시 Chrome 개발자 모드가 필요합니다
+
+## 📬 연락처
 
 `imxtraa7@gmail.com`

@@ -1,132 +1,193 @@
-# Current Runtime Architecture
+<p align="right">
+  <a href="architecture.ko.md">한국어</a>
+</p>
 
-## Target Runtime Boundaries
+# 🏛️ Runtime Architecture
 
-- **Background service worker**
-  - typed command router
-  - translation/refine task orchestration
-  - retry/cancel/keep-alive coordination
-  - settings/cache/usage access layer
-- **Content script**
-  - YouTube DOM capability detection
-  - transcript extraction adapter
-  - panel and overlay rendering
-  - projection of background task state into the page
-- **Popup**
-  - typed command client for settings, usage, and cache management
-  - direct local API key management to keep secrets off the generic runtime bus
-- **Domain**
-  - pure logic only
-  - chunking, fingerprinting, resume, usage aggregation, error mapping
-- **Adapters**
-  - Chrome storage/runtime access
-  - Gemini request/response translation
-  - YouTube DOM strategies
+> Architectural snapshot for the YouTube AI Translator Chrome extension (v3.0.0).
+
+---
+
+## Runtime Boundaries
+
+The extension is split into five isolation zones. Each zone has a single responsibility and communicates only through typed contracts.
+
+```mermaid
+flowchart LR
+  subgraph adapters["Adapters"]
+    storage["Chrome Storage"]
+    gemini["Gemini API"]
+    youtube["YouTube DOM"]
+  end
+
+  subgraph bg["Background"]
+    router["Command Router"]
+    orch["Task Orchestrator"]
+  end
+
+  subgraph cs["Content Script"]
+    detect["Transcript Detection"]
+    panel["Translation Panel"]
+    overlay["Subtitle Overlay"]
+  end
+
+  popup["Popup\n(Settings · Cache · Key)"]
+  domain["Domain\n(Pure Logic)"]
+
+  popup -- "typed command" --> router
+  cs -- "typed command" --> router
+  router --> orch
+  orch --> gemini
+  orch --> storage
+  orch -.-> domain
+  detect --> youtube
+  orch -- "typed event" --> panel
+  orch -- "typed event" --> overlay
+  popup --> storage
+```
+
+| Zone | Location | Responsibility |
+|---|---|---|
+| **Background** | `extension/background/` | Command router, translation/refine orchestration, retry/cancel/keep-alive |
+| **Content Script** | `extension/content/` | YouTube DOM detection, transcript extraction, panel & overlay rendering |
+| **Popup** | `extension/popup/` | Settings, cache management, usage stats, local API key management |
+| **Domain** | `extension/domain/` | Pure logic — chunking, fingerprinting, resume, usage aggregation, error mapping |
+| **Adapters** | `extension/adapters/` | Chrome storage, Gemini request/response, YouTube DOM strategies |
 
 ## Directory Model
 
-```text
+```
 extension/
 ├── adapters/
-│   └── storage/
-├── background/
-├── content/
-├── domain/
-├── popup/
-└── shared/
-    └── contracts/
+│   ├── gemini/           # Gemini API request/response translation
+│   ├── storage/          # Chrome storage read/write
+│   └── youtube/          # DOM strategies, fixtures, transcript extraction
+│       └── __fixtures__/ # Legacy & modern transcript DOM snapshots
+├── background/           # Service worker entrypoint, command router, task orchestration
+├── content/              # Content script entrypoint, panel, overlay, surface state
+├── domain/               # Pure business logic (no browser APIs)
+│   ├── resume/
+│   ├── retry/
+│   ├── transcript/
+│   └── usage/
+├── popup/                # Extension popup UI, styles, API key management
+└── shared/               # Typed contracts & messaging helpers
+    └── contracts/        # Command, event, settings, cache type definitions
 ```
-
-The Vite build packages the default extension artifact into `dist/`, and `npm run dev` / `npm run build` target the `extension/` runtime source tree by default.
-
-The current default runtime already routes settings, cache, usage, and typed translation start/resume/cancel plus refine task orchestration through `extension/background`. The popup reads and writes the API key through the shared storage adapter instead of the generic runtime bus, presents a user-facing management shell rather than diagnostic copy, tolerates partial section load failures, keeps async popup actions explicitly disabled while they are running, and intentionally favors a low-density layout that surfaces only the controls and metrics needed for the primary setup/cache tasks. The content script consumes typed runtime events into a typed panel and overlay surface, exposes YouTube-integrated open/translate/cancel controls through the main content path, and centralizes transcript button/panel detection, transcript opening, transcript extraction, and video context lookup in `extension/adapters/youtube` so YouTube-specific DOM rules no longer live directly in the content entrypoint. The in-video subtitle overlay intentionally follows the established subtitle visual baseline while keeping the maintained implementation in one place.
-
-Within the current Phase 4 slice, malformed Gemini JSON now fails the task instead of being accepted as an empty success, and cache writes are treated as best-effort side effects rather than task-fatal steps.
 
 ## Typed Runtime Contract
 
-### Commands
+All communication between zones uses typed command/event pairs defined in `extension/shared/contracts/`.
 
-- `settings.get`
-- `settings.save`
-- `translation.start`
-- `translation.cancel`
-- `translation.resume`
-- `refine.start`
-- `cache.list`
-- `cache.get`
-- `cache.import`
-- `cache.delete`
-- `cache.clear`
-- `usage.get`
+### Commands (Popup / Content → Background)
 
-### Page Messages
+| Command | Direction | Purpose |
+|---|---|---|
+| `settings.get` | Popup → BG | Read current settings |
+| `settings.save` | Popup → BG | Persist settings changes |
+| `translation.start` | Content → BG | Begin new translation run |
+| `translation.cancel` | Content → BG | Abort active translation |
+| `translation.resume` | Content → BG | Continue from partial cache |
+| `refine.start` | Content → BG | Re-translate current bundle |
+| `cache.list` | Popup → BG | List cached translations |
+| `cache.get` | Popup → BG | Retrieve specific cache entry |
+| `cache.import` | Content → BG | Import translation bundle |
+| `cache.delete` | Popup → BG | Delete single cache entry |
+| `cache.clear` | Popup → BG | Clear all cached translations |
+| `usage.get` | Popup → BG | Read usage statistics |
 
-- `cache.delete`
-- `cache.clear`
+### Page Messages (Popup → Content)
 
-### Events
+| Message | Purpose |
+|---|---|
+| `cache.delete` | Notify content to clear surface for deleted video |
+| `cache.clear` | Notify content to clear all translated state |
 
-- `translation.progress`
-- `translation.retrying`
-- `translation.completed`
-- `translation.failed`
-- `translation.cancelled`
-- `refine.completed`
-- `refine.failed`
+### Events (Background → Content)
+
+| Event | Purpose |
+|---|---|
+| `translation.progress` | Chunk completion progress |
+| `translation.retrying` | Retry attempt notification |
+| `translation.completed` | Full translation success |
+| `translation.failed` | Translation error |
+| `translation.cancelled` | User-initiated cancellation |
+| `refine.completed` | Refinement success |
+| `refine.failed` | Refinement error |
 
 ## Storage Compatibility Rules
 
-- Existing settings keys remain valid:
-  - `targetLang`
-  - `sourceLang`
-  - `thinkingLevel`
-  - `resumeMode`
-- Existing usage key remains valid:
-  - `tokenHistory`
-- Existing API key storage remains valid:
-  - `apiKey`
-- Existing cache key conventions remain the compatibility baseline:
-  - index key `idx_translations`
-  - data prefix `dat_`
-- Runtime cache metadata exposes the stored cache key explicitly as `cacheKey` to avoid conflating it with the raw YouTube video id.
-- Schema version markers now use runtime-facing keys and migrate earlier compatibility keys forward on read or write so stored data stays compatible across the 3.0.0 runtime layout.
-- Runtime cache writes should preserve a human-readable title when one is available from the request or active tab, and they should never downgrade a successful translation/refine result into a failed task purely because storage rejected the write.
+All stored keys must remain backward-compatible across runtime versions.
+
+| Category | Keys | Notes |
+|---|---|---|
+| **Settings** | `targetLang`, `sourceLang`, `thinkingLevel`, `resumeMode` | Remain valid across versions |
+| **Usage** | `tokenHistory` | Single aggregation key |
+| **API Key** | `apiKey` | Obfuscated, popup-local read/write |
+| **Cache Index** | `idx_translations` | Translation index key |
+| **Cache Data** | `dat_*` | Per-video data prefix |
+
+> [!IMPORTANT]
+> - Cache metadata exposes `cacheKey` explicitly — never conflate with raw YouTube video ID.
+> - Schema version markers migrate forward on read/write for 3.0.0 layout compatibility.
+> - Cache writes must preserve human-readable titles when available and must never downgrade a successful result into a failure because storage rejected the write.
 
 ## Data Flow
 
 ### Settings / Usage / Cache
 
-1. Popup sends a typed command to background.
-2. Background validates the command and calls storage adapters.
-3. Background returns a typed success or failure payload.
-4. Popup renders state without duplicating storage rules, while API key reads and writes stay local to the popup through the shared storage adapter.
+```mermaid
+sequenceDiagram
+  participant P as Popup
+  participant B as Background
+  participant S as Storage Adapter
+
+  P->>B: typed command
+  B->>B: validate
+  B->>S: read / write
+  S-->>B: result
+  B-->>P: typed success / failure
+```
+
+API key reads and writes bypass the command bus — they stay local to the popup through the shared storage adapter.
 
 ### Translation / Refine
 
-1. Content discovers transcript capabilities on the YouTube page.
-2. Content requests translation or refinement from background.
-3. Background owns task lifecycle, retries, and cancellation.
-4. Background emits typed progress events.
-5. Content renders state transitions into the panel and overlay.
+```mermaid
+sequenceDiagram
+  participant C as Content Script
+  participant B as Background
+  participant G as Gemini Adapter
+  participant S as Storage
 
-At the current checkpoint, steps 3 and 4 exist in the default typed runtime for `translation.start`, `translation.resume`, `translation.cancel`, `refine.start`, and typed imported-bundle cache writes, while step 5 exists as a typed content-side surface driven by the runtime event stream, adapter-backed YouTube transcript capability scans, cached-translation rehydration, and in-page action controls plus refine/export/import header actions. The remaining operational work is browser-side regression verification rather than the basic command/event contract, transcript discovery path, or content-side state model itself.
+  C->>B: translation.start / resume / refine.start
+  B->>G: chunked Gemini requests
+  G-->>B: translated chunks
+  B->>S: cache write (best-effort)
+  B-->>C: progress / completed / failed events
+  C->>C: render panel + overlay
+```
+
+> [!NOTE]
+> Malformed Gemini JSON fails the task immediately — it is not accepted as an empty success. Cache writes are best-effort side effects, not task-fatal steps.
 
 ## DOM Strategy Requirements
 
-- Transcript panel detection cannot rely on a single selector.
-- Open/close detection must tolerate:
-  - child node insertion
-  - attribute-only visibility changes
-  - old renderer structures
-  - new renderer/view-model structures
-- Native transcript hide/restore must preserve original rendering semantics rather than forcing a generic display value.
-- Custom panel actions must mount outside transcript body containers that may be hidden as part of the translation surface handoff path.
-- Overlay event subscriptions must be torn down when the overlay is hidden so stale playback listeners cannot resurrect dismissed subtitle text.
+YouTube's transcript DOM is unstable across renderer updates. The adapter layer must handle both legacy and modern structures.
+
+| Requirement | Detail |
+|---|---|
+| **Multi-selector detection** | Panel detection cannot rely on a single CSS selector |
+| **Open/close tolerance** | Must handle child node insertion, attribute-only visibility changes, old renderer, and new view-model structures |
+| **Native semantics** | Hide/restore must preserve original rendering semantics, not force a generic `display` value |
+| **Mount position** | Custom panel actions mount outside transcript body containers that may be hidden during surface handoff |
+| **Overlay teardown** | Event subscriptions torn down on hide to prevent stale playback listeners from resurrecting dismissed text |
 
 ## UI Baseline Requirements
 
-- Popup and content surfaces should default to the lowest information density that still supports the primary task without hiding essential controls.
-- Additional helper copy, summary cards, or dashboard-style telemetry should not be added unless they unlock a concrete production action.
-- The popup usage summary is expected to remain compact and scannable inside the extension-width shell, including a stable 2x2 stats layout.
-- The in-video subtitle overlay should keep the established visual style as the design baseline unless an intentional product decision replaces it.
+| Principle | Guideline |
+|---|---|
+| **Information density** | Default to the lowest density that still supports the primary task |
+| **No speculative additions** | No helper copy, summary cards, or dashboard telemetry unless they unlock a concrete action |
+| **Popup layout** | Usage summary stays compact and scannable — stable 2×2 stats layout |
+| **Overlay style** | Keep the established visual baseline unless an intentional product decision replaces it |
