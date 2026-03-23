@@ -3,6 +3,9 @@
 > Technical notes for the Gemini 3 Flash Preview based YouTube caption translation extension.  
 > For end-user setup and usage, see the [English README](../README.md) or the [Korean README](../README.ko.md).
 
+> [!NOTE]
+> The rebuilt TypeScript/Vite runtime under `src/` is now the default extension path and builds into `dist/`. This document is kept as a legacy implementation reference while Phase 6 cleanup removes the remaining obsolete `extension/` runtime slices. Follow the authoritative docs in [../docs/rebuild/plan.md](../docs/rebuild/plan.md), [../docs/rebuild/architecture.md](../docs/rebuild/architecture.md), and [../docs/rebuild/progress.md](../docs/rebuild/progress.md).
+
 ![Docs](https://img.shields.io/badge/Docs-Technical-0A7EA4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
@@ -19,7 +22,13 @@
 - **🗂️ Local storage cache**: Stores up to 100 cached translations in `chrome.storage.local` with a 30-day TTL.
 - **📊 Token usage history**: Tracks input and output token usage for daily and 30-day summaries in the popup.
 
-## File Structure
+## Current Default Runtime
+
+- Default build output: `dist/`
+- Default source of truth: `src/`
+- Legacy reference kept temporarily: `extension/`
+
+## Legacy File Structure
 
 ```text
 extension/

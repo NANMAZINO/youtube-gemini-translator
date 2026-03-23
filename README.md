@@ -1,4 +1,4 @@
-[README in Korean](README.ko.md) · [Technical README](extension/README.md) · [Korean Technical README](extension/README.ko.md)
+[README in Korean](README.ko.md) · [Architecture](docs/rebuild/architecture.md) · [Progress Log](docs/rebuild/progress.md) · [Legacy Technical README](extension/README.md)
 
 # YouTube AI Translator
 
@@ -11,11 +11,14 @@
 **YouTube AI Translator** reads YouTube captions, sends them to Google **Gemini 3 Flash Preview**, and renders translated results in real time through both a side panel and an on-video overlay.  
 Instead of translating each line in isolation, it aims to preserve the flow of the surrounding conversation so subtitles read more naturally.
 
+> [!NOTE]
+> The TypeScript/Vite rebuild is now the default runtime path. The execution plan, target architecture, and session-by-session progress log live in [docs/rebuild/plan.md](docs/rebuild/plan.md), [docs/rebuild/architecture.md](docs/rebuild/architecture.md), and [docs/rebuild/progress.md](docs/rebuild/progress.md). The legacy `extension/` tree remains in the repository temporarily for regression reference during Phase 6 cleanup.
+
 ## Highlights
 
 - **🧠 Context-aware translation**: Carries recent translation context forward for more consistent tone and terminology.
 - **⚡ Real-time rendering**: Progress and translated output appear immediately in both the panel and the overlay.
-- **✂️ Caption refinement**: Re-groups fragmented auto-captions into more readable sentence-like chunks.
+- **🔐 Local API key flow**: Save or clear your Gemini API key directly from the rebuilt popup.
 - **⏯️ Resume mode**: Reuses completed chunks after refreshes or interruptions.
 - **🗂️ Local cache**: Stores up to 100 translation entries and removes old ones after 30 days.
 - **📊 Usage tracking**: Shows token usage and estimated cost for today and the last 30 days in the popup.
@@ -27,9 +30,11 @@ Instead of translating each line in isolation, it aims to preserve the flow of t
 This project is currently loaded through Chrome Developer Mode rather than the Chrome Web Store.
 
 1. Download or clone this repository.
-2. Open `chrome://extensions` in Chrome.
-3. Enable `Developer mode`.
-4. Click `Load unpacked` and select the `extension` folder from this repository.
+2. Run `npm install`.
+3. Run `npm run build`.
+4. Open `chrome://extensions` in Chrome.
+5. Enable `Developer mode`.
+6. Click `Load unpacked` and select the `dist` folder from this repository.
 
 ### 2. Add your Gemini API key
 
@@ -43,8 +48,9 @@ This project is currently loaded through Chrome Developer Mode rather than the C
 ### 3. Start translating
 
 1. Open a YouTube video that has captions.
-2. Click the `📜 Open Script` button that appears near the video actions to open the transcript panel.
-3. Click `AI Translate` at the top of the panel.
+2. Click `Open Transcript` near the video actions to open the transcript panel.
+3. Click `Translate` inside the transcript panel.
+4. Use `Refine`, `Export JSON`, or `Import JSON` from the rebuilt translation surface when you need post-processing or manual bundle reuse.
 
 ## How It Works
 
@@ -55,22 +61,19 @@ This project is currently loaded through Chrome Developer Mode rather than the C
 - You can drag the overlay to reposition it and use the mouse wheel to resize the text.
 - Double-clicking the overlay resets its position.
 
-### Refinement
-
-If auto-generated captions are too fragmented, use the `Refine` button after translation to regroup them into easier-to-read chunks.
-
 ### Popup settings
 
+- **Gemini API key**: save, reveal, or clear the key used for browser-to-Gemini requests
 - **Thinking Level**: `Minimal`, `Low`, `Medium`, `High`
 - **Language settings**: auto-detect source language and choose a target language
 - **Resume Mode**: continue interrupted translations
 - **Token usage**: review daily and 30-day usage with estimated cost
 - **Cache management**: remove individual entries or clear all cached data
 
-### Export / import JSON
+### Rebuilt parity notes
 
-- Use `💾` in the translation panel to export the current translation as JSON.
-- Use `📁` to import a previously saved translation file.
+- The default rebuilt runtime now covers translation, resume, refine, JSON export/import, popup settings, API key management, usage tracking, and cache management.
+- The main remaining Phase 6 work is legacy cleanup and manual browser verification across retained YouTube DOM variants.
 
 ## Limitations
 
@@ -83,17 +86,22 @@ If auto-generated captions are too fragmented, use the `Refine` button after tra
 This repository keeps documentation in two layers:
 
 - This file: installation and usage for end users
-- [extension/README.md](extension/README.md): default English technical structure, modules, and tests
-- [extension/README.ko.md](extension/README.ko.md): Korean technical documentation
+- [docs/rebuild/architecture.md](docs/rebuild/architecture.md): current runtime architecture and boundaries
+- [docs/rebuild/progress.md](docs/rebuild/progress.md): rebuild status and recent implementation slices
+- [extension/README.md](extension/README.md): legacy implementation reference kept during cleanup
+- [extension/README.ko.md](extension/README.ko.md): Korean legacy technical reference
 
 ## Development and Tests
 
 ```bash
+npm run dev
+npm run build
+npm run rebuild:check
 npm test
 npm run test:coverage
 ```
 
-The root `package.json` uses Node's built-in test runner and includes coverage-focused checks for core utilities, retry logic, cache behavior, and resume logic.
+The root `package.json` now builds the default extension artifact into `dist/`, while Node's built-in test runner still covers both the retained legacy modules and the rebuilt TypeScript runtime during the cleanup phase.
 
 ## FAQ
 

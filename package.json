@@ -3,7 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test \"extension/**/*.test.js\"",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 --test-coverage-include=extension/lib/retry.js --test-coverage-include=extension/lib/errors.js --test-coverage-include=extension/content/utils.js \"extension/**/*.test.js\""
+    "dev": "vite",
+    "dev:rebuild": "vite",
+    "build": "vite build",
+    "build:rebuild": "vite build",
+    "test": "node --test \"extension/**/*.test.js\" \"src/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 --test-coverage-include=extension/lib/retry.js --test-coverage-include=extension/lib/errors.js --test-coverage-include=extension/content/utils.js --test-coverage-include=src/**/*.ts \"extension/**/*.test.js\" \"src/**/*.test.js\"",
+    "typecheck": "tsc --noEmit",
+    "rebuild:check": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "2.4.0",
+    "@types/chrome": "0.1.38",
+    "@types/node": "25.5.0",
+    "typescript": "5.9.3",
+    "vite": "8.0.2"
   }
 }
