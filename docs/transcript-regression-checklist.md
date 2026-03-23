@@ -2,12 +2,12 @@
 
 ## Fixture Anchors
 
-- Legacy transcript DOM fixture: `src/adapters/youtube/__fixtures__/transcript-legacy.html`
-- Modern transcript DOM fixture: `src/adapters/youtube/__fixtures__/transcript-modern.html`
+- Classic transcript DOM fixture: `extension/adapters/youtube/__fixtures__/transcript-legacy.html`
+- Modern transcript DOM fixture: `extension/adapters/youtube/__fixtures__/transcript-modern.html`
 - Automated regression tests:
-  - `src/adapters/youtube/transcript-dom.fixture.test.js`
-  - `src/adapters/youtube/transcript-extractor.test.js`
-  - `src/adapters/youtube/transcript-opener.test.js`
+  - `extension/adapters/youtube/transcript-dom.fixture.test.js`
+  - `extension/adapters/youtube/transcript-extractor.test.js`
+  - `extension/adapters/youtube/transcript-opener.test.js`
 
 These fixtures are intentionally small snapshots of the old and new YouTube transcript structures that the runtime adapters must continue to support.
 

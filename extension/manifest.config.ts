@@ -9,18 +9,18 @@ const manifest = {
     'https://generativelanguage.googleapis.com/*',
   ],
   background: {
-    service_worker: 'src/background/service-worker.ts',
+    service_worker: 'extension/background/service-worker.ts',
     type: 'module',
   },
   content_scripts: [
     {
       matches: ['https://www.youtube.com/*'],
-      js: ['src/content/content-script.ts'],
+      js: ['extension/content/content-script.ts'],
       run_at: 'document_idle',
     },
   ],
   action: {
-    default_popup: 'src/popup/index.html',
+    default_popup: 'extension/popup/index.html',
     default_title: 'YouTube AI Translator',
   },
 } satisfies chrome.runtime.ManifestV3;

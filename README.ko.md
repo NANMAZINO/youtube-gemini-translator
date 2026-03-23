@@ -1,4 +1,4 @@
-[English README](README.md) · [마이그레이션 계획](docs/rebuild/plan.md) · [아키텍처 스냅샷](docs/rebuild/architecture.md) · [진행 로그](docs/rebuild/progress.md) · [레거시 런타임 참고 문서](extension/README.ko.md)
+[English README](README.md) · [문서 개요](docs/README.ko.md) · [아키텍처 스냅샷](docs/architecture.md) · [Transcript 회귀 체크리스트](docs/transcript-regression-checklist.md)
 
 # YouTube AI Translator
 
@@ -9,7 +9,7 @@
 ![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
-이제 `src/`가 메인 확장 런타임이며, `npm run build` 결과물인 `dist/`를 Chrome에 로드하면 됩니다. 남아 있는 `extension/` 트리는 회귀 비교용으로만 유지하는 최소 레거시 참고 경로입니다.
+이제 `extension/`이 메인 확장 런타임 소스 트리이며, `npm run build` 결과물인 `dist/`를 Chrome에 로드하면 됩니다.
 
 ## 무엇을 하나요
 
@@ -56,10 +56,9 @@
 
 ## 저장소 구조
 
-- `src/`: 메인 TypeScript/Vite 런타임
+- `extension/`: 메인 TypeScript/Vite 런타임 소스
 - `dist/`: Chrome에 로드할 빌드 결과물
-- `docs/rebuild/`: 마이그레이션 계획, 아키텍처 스냅샷, 진행 기록, transcript 회귀 체크리스트
-- `extension/`: 회귀 비교용으로만 남겨둔 레거시 런타임 참고 경로
+- `docs/`: 현재 런타임 문서
 
 ## 개발
 
@@ -76,9 +75,8 @@ npm run test:coverage
 
 ## 현재 상태
 
-- `src/` 기반 TypeScript/Vite 런타임이 기본 구현입니다.
+- `extension/` 기반 TypeScript/Vite 런타임이 기본 구현입니다.
 - Chrome에는 `extension/`이 아니라 `dist/` 결과물을 로드해야 합니다.
-- 남아 있는 `extension/` 트리는 레거시 동작 비교를 위한 참고 자료일 뿐입니다.
 - YouTube DOM 처리나 오버레이 동작을 바꿀 때는 실제 브라우저 수동 검증이 여전히 중요합니다.
 
 ## 제한 사항
