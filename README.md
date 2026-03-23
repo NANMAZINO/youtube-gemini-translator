@@ -1,4 +1,4 @@
-[README in Korean](README.ko.md) · [Migration Plan](docs/rebuild/plan.md) · [Architecture Snapshot](docs/rebuild/architecture.md) · [Migration Log](docs/rebuild/progress.md) · [Legacy Runtime Reference](extension/README.md)
+[README in Korean](README.ko.md) · [Docs Overview](docs/README.md) · [Architecture Snapshot](docs/architecture.md) · [Transcript Regression Checklist](docs/transcript-regression-checklist.md)
 
 # YouTube AI Translator
 
@@ -9,7 +9,7 @@
 ![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
-`src/` is now the main extension runtime. `npm run build` produces the loadable `dist/` artifact, and the retained `extension/` tree is kept only as a minimal legacy reference for regression comparison.
+`extension/` is now the main extension runtime source tree. `npm run build` produces the loadable `dist/` artifact.
 
 ## What It Does
 
@@ -56,10 +56,9 @@ The key is stored in `chrome.storage.local` in obfuscated form, and requests go 
 
 ## Repository Map
 
-- `src/`: main TypeScript/Vite runtime
+- `extension/`: main TypeScript/Vite runtime source
 - `dist/`: built Chrome extension artifact
-- `docs/rebuild/`: migration plan, architecture snapshot, progress history, and transcript regression checklist
-- `extension/`: archived legacy runtime reference for regression comparison
+- `docs/`: current runtime docs
 
 ## Development
 
@@ -76,9 +75,8 @@ npm run test:coverage
 
 ## Current Status
 
-- The TypeScript/Vite runtime under `src/` is the default implementation.
-- The extension should be loaded from `dist/`, not from `extension/`.
-- The retained `extension/` tree exists only as a legacy behavior reference.
+- The TypeScript/Vite runtime under `extension/` is the default implementation.
+- The extension should be loaded from `dist/`, not directly from `extension/`.
 - Manual browser verification still matters when changing YouTube DOM handling or overlay behavior.
 
 ## Limitations

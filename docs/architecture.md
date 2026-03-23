@@ -26,7 +26,7 @@
 ## Directory Model
 
 ```text
-src/
+extension/
 ├── adapters/
 │   └── storage/
 ├── background/
@@ -37,9 +37,9 @@ src/
     └── contracts/
 ```
 
-The Vite build packages the default extension artifact into `dist/`, and `npm run dev` / `npm run build` now target the main `src/` runtime by default. The retained `extension/` tree is archived as a minimal legacy regression reference rather than a parallel runtime path.
+The Vite build packages the default extension artifact into `dist/`, and `npm run dev` / `npm run build` target the `extension/` runtime source tree by default.
 
-The current default runtime already routes settings, cache, usage, and typed translation start/resume/cancel plus refine task orchestration through `src/background`. The popup reads and writes the API key through the shared storage adapter instead of the generic runtime bus, presents a user-facing management shell rather than migration-only diagnostic copy, tolerates partial section load failures, keeps async popup actions explicitly disabled while they are running, and intentionally favors a low-density layout that surfaces only the controls and metrics needed for the primary setup/cache tasks. The content script consumes typed runtime events into a typed panel and overlay surface, exposes YouTube-integrated open/translate/cancel controls through the main content path, and centralizes transcript button/panel detection, transcript opening, transcript extraction, and video context lookup in `src/adapters/youtube` so YouTube-specific DOM rules no longer live directly in the content entrypoint. The in-video subtitle overlay intentionally follows the legacy visual baseline even though its behavior is now owned by the typed path, preserving the familiar subtitle look while keeping the maintained implementation in one place.
+The current default runtime already routes settings, cache, usage, and typed translation start/resume/cancel plus refine task orchestration through `extension/background`. The popup reads and writes the API key through the shared storage adapter instead of the generic runtime bus, presents a user-facing management shell rather than diagnostic copy, tolerates partial section load failures, keeps async popup actions explicitly disabled while they are running, and intentionally favors a low-density layout that surfaces only the controls and metrics needed for the primary setup/cache tasks. The content script consumes typed runtime events into a typed panel and overlay surface, exposes YouTube-integrated open/translate/cancel controls through the main content path, and centralizes transcript button/panel detection, transcript opening, transcript extraction, and video context lookup in `extension/adapters/youtube` so YouTube-specific DOM rules no longer live directly in the content entrypoint. The in-video subtitle overlay intentionally follows the established subtitle visual baseline while keeping the maintained implementation in one place.
 
 Within the current Phase 4 slice, malformed Gemini JSON now fails the task instead of being accepted as an empty success, and cache writes are treated as best-effort side effects rather than task-fatal steps.
 
@@ -90,7 +90,7 @@ Within the current Phase 4 slice, malformed Gemini JSON now fails the task inste
   - index key `idx_translations`
   - data prefix `dat_`
 - Runtime cache metadata exposes the stored cache key explicitly as `cacheKey` to avoid conflating it with the raw YouTube video id.
-- Schema version markers now use runtime-facing keys and migrate legacy rebuild-era keys forward on read or write so stored data stays compatible across the 3.0.0 cutover.
+- Schema version markers now use runtime-facing keys and migrate earlier compatibility keys forward on read or write so stored data stays compatible across the 3.0.0 runtime layout.
 - Runtime cache writes should preserve a human-readable title when one is available from the request or active tab, and they should never downgrade a successful translation/refine result into a failed task purely because storage rejected the write.
 
 ## Data Flow
@@ -121,7 +121,7 @@ At the current checkpoint, steps 3 and 4 exist in the default typed runtime for 
   - old renderer structures
   - new renderer/view-model structures
 - Native transcript hide/restore must preserve original rendering semantics rather than forcing a generic display value.
-- Custom panel actions must mount outside transcript body containers that may be hidden as part of the rebuild surface takeover path.
+- Custom panel actions must mount outside transcript body containers that may be hidden as part of the translation surface handoff path.
 - Overlay event subscriptions must be torn down when the overlay is hidden so stale playback listeners cannot resurrect dismissed subtitle text.
 
 ## UI Baseline Requirements
@@ -129,4 +129,4 @@ At the current checkpoint, steps 3 and 4 exist in the default typed runtime for 
 - Popup and content surfaces should default to the lowest information density that still supports the primary task without hiding essential controls.
 - Additional helper copy, summary cards, or dashboard-style telemetry should not be added unless they unlock a concrete production action.
 - The popup usage summary is expected to remain compact and scannable inside the extension-width shell, including a stable 2x2 stats layout.
-- The rebuilt in-video subtitle overlay should keep the legacy visual style as the design baseline unless an intentional product decision replaces it.
+- The in-video subtitle overlay should keep the established visual style as the design baseline unless an intentional product decision replaces it.
