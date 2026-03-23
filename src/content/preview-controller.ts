@@ -418,7 +418,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
   async function importBundleFile(file: File) {
     publish({
       busy: true,
-      statusMessage: 'Importing JSON subtitles into the rebuild surface...',
+      statusMessage: 'Importing JSON subtitles into the translation surface...',
     });
 
     try {

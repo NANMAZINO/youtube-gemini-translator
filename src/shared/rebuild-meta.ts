@@ -1,6 +1,6 @@
 export const REBUILD_META = Object.freeze({
-  phase: 'Phase 6',
-  title: 'Content controls and cutover prep',
+  phase: 'Runtime',
+  title: 'Default typed MV3 path',
   summary:
-    'The typed MV3 rebuild now drives the YouTube panel, overlay surface, and in-page action controls while the remaining Phase 6 cutover cleanup is finished.',
+    'The typed MV3 runtime now drives the YouTube panel, overlay surface, popup, and in-page action controls as the default extension path.',
 });

@@ -141,7 +141,7 @@ if (!window.__YT_AI_REBUILD_CONTENT__) {
   resetRuntimeProjection();
 
   console.info(
-    `[YT AI Translator Rebuild] Content runtime active on YouTube (${REBUILD_META.phase}: ${REBUILD_META.title})`,
+    `[YT AI Translator] Content runtime active on YouTube (${REBUILD_META.phase}: ${REBUILD_META.title})`,
   );
 
   currentTask = null;
@@ -166,7 +166,7 @@ if (!window.__YT_AI_REBUILD_RUNTIME_LISTENER__) {
       const activeVideoId = getCurrentYouTubeVideoId();
       if (!activeVideoId || task.videoId !== activeVideoId) {
         console.info(
-          '[YT AI Translator Rebuild] Ignoring stale event for inactive video:',
+          '[YT AI Translator] Ignoring stale event for inactive video:',
           task.videoId,
           activeVideoId,
         );
@@ -179,7 +179,7 @@ if (!window.__YT_AI_REBUILD_RUNTIME_LISTENER__) {
       renderAll();
 
       console.info(
-        '[YT AI Translator Rebuild] Event received:',
+        '[YT AI Translator] Event received:',
         task.lastEventType,
         projection.tasks[task.taskId],
       );

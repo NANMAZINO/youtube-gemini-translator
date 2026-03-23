@@ -91,7 +91,7 @@ function createSurfaceControls(
         ? 'Import becomes available again when the current translation is no longer on screen.'
         : hasCachedRecord
           ? 'Import a JSON subtitle bundle. Any hidden saved draft for this video will be replaced.'
-          : 'Import a JSON subtitle bundle into the rebuild surface.',
+          : 'Import a JSON subtitle bundle into the translation surface.',
     showRefineAction,
     refineEnabled: showRefineAction && !activeTask && !busy && !isRefinedResult,
     refineLabel: isRefinedResult

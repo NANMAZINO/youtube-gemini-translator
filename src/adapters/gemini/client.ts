@@ -98,7 +98,7 @@ function createGeminiParseError(message: string) {
 function getFetchImplementation(fetchImpl?: FetchImpl) {
   const activeFetch = fetchImpl ?? globalThis.fetch;
   if (typeof activeFetch !== 'function') {
-    throw new Error('Fetch API is not available in the rebuild runtime.');
+    throw new Error('Fetch API is not available in the extension runtime.');
   }
 
   return activeFetch;

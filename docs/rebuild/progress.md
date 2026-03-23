@@ -9,9 +9,24 @@
 | Phase 3 pure domain port | Done | Transcript, resume, retry, Gemini request building, and cache compatibility logic now live in `src/` |
 | Phase 4 background/popup rebuild | Done | Typed translation start/resume/cancel and refine orchestration now run in `src/background`, and `src/content` projects typed task events into a lightweight preview monitor |
 | Phase 5 content/UI rebuild | Done | Typed YouTube adapters, preview controls, label registry, and panel/overlay surface now live under `src/` |
-| Phase 6 cutover | In Progress | Default build/dev/docs now point at `src` and `dist`; legacy runtime cleanup still pending |
+| Phase 6 cutover | Done | `src/` and `dist/` are now the default runtime and build path |
+| Post-cutover cleanup | In Progress | Archived `extension/` references still need targeted cleanup and regression trimming |
 
 ## 2026-03-24
+
+### Session Start
+
+- **In Progress:** present the typed runtime as the mainline extension path instead of a rebuild preview, then refresh the user-facing and legacy-facing README set to match
+
+### Session End
+
+- **Done:** promoted `npm run check` to the primary local quality gate while keeping `rebuild:check` as a compatibility alias
+- **Done:** refreshed the English and Korean root READMEs so they describe `src/` as the main runtime, `dist/` as the load target, and `extension/` as an archived legacy reference
+- **Done:** rewrote the legacy technical READMEs so they clearly frame `extension/` as reference-only instead of a competing primary runtime
+- **Done:** removed the remaining user-facing `Rebuild` copy from runtime labels, status text, and console prefixes that still leaked cutover terminology into the default experience
+- **Decision:** keep `docs/rebuild/` as the migration-history location even though the default runtime cutover is complete, so cleanup work can keep a stable audit trail
+- **Next:** trim duplicated legacy slices under `extension/` in smaller cleanup passes and decide later whether internal `rebuild.*` protocol names are worth a dedicated rename
+- **Validation:** `npm run check`
 
 ### Session Start
 

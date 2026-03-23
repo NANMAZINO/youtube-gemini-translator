@@ -1,118 +1,91 @@
-[README in Korean](README.ko.md) · [Architecture](docs/rebuild/architecture.md) · [Progress Log](docs/rebuild/progress.md) · [Legacy Technical README](extension/README.md)
+[README in Korean](README.ko.md) · [Migration Plan](docs/rebuild/plan.md) · [Architecture Snapshot](docs/rebuild/architecture.md) · [Migration Log](docs/rebuild/progress.md) · [Legacy Runtime Reference](extension/README.md)
 
 # YouTube AI Translator
 
-> A Chrome extension that translates YouTube captions with context in mind.
+> Chrome extension for context-aware YouTube caption translation with Gemini.
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini-3%20Flash%20Preview-8E75FF?style=flat-square)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES%20Modules-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-Node%20Built--in-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
-**YouTube AI Translator** reads YouTube captions, sends them to Google **Gemini 3 Flash Preview**, and renders translated results in real time through both a side panel and an on-video overlay.  
-Instead of translating each line in isolation, it aims to preserve the flow of the surrounding conversation so subtitles read more naturally.
+`src/` is now the main extension runtime. `npm run build` produces the loadable `dist/` artifact, and the retained `extension/` tree is kept only as a legacy reference while cleanup continues.
 
-> [!NOTE]
-> The TypeScript/Vite rebuild is now the default runtime path. The execution plan, target architecture, and session-by-session progress log live in [docs/rebuild/plan.md](docs/rebuild/plan.md), [docs/rebuild/architecture.md](docs/rebuild/architecture.md), and [docs/rebuild/progress.md](docs/rebuild/progress.md). The legacy `extension/` tree remains in the repository temporarily for regression reference during Phase 6 cleanup.
+## What It Does
 
-## Highlights
-
-- **🧠 Context-aware translation**: Carries recent translation context forward for more consistent tone and terminology.
-- **⚡ Real-time rendering**: Progress and translated output appear immediately in both the panel and the overlay.
-- **🔐 Local API key flow**: Save or clear your Gemini API key directly from the rebuilt popup.
-- **⏯️ Resume mode**: Reuses completed chunks after refreshes or interruptions.
-- **🗂️ Local cache**: Stores up to 100 translation entries and removes old ones after 30 days.
-- **📊 Usage tracking**: Shows token usage and estimated cost for today and the last 30 days in the popup.
+- Reads YouTube transcript segments and translates them with surrounding context in mind.
+- Injects transcript-aware controls directly into the YouTube watch page.
+- Shows translated output in both the transcript surface and the on-video overlay.
+- Supports resume mode, refine, JSON export/import, cache management, and usage tracking.
+- Stores the Gemini API key locally in the popup instead of relying on a relay server.
 
 ## Quick Start
 
 ### 1. Install the extension
 
-This project is currently loaded through Chrome Developer Mode rather than the Chrome Web Store.
-
-1. Download or clone this repository.
+1. Clone or download this repository.
 2. Run `npm install`.
 3. Run `npm run build`.
 4. Open `chrome://extensions` in Chrome.
 5. Enable `Developer mode`.
-6. Click `Load unpacked` and select the `dist` folder from this repository.
+6. Click `Load unpacked` and select this repository's `dist/` folder.
 
 ### 2. Add your Gemini API key
 
 1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
-2. Open the extension menu from the Chrome toolbar and click `YouTube AI Translator`.
-3. Paste the key into the popup and save it.
+2. Open the extension popup from the Chrome toolbar.
+3. Paste the key and save it.
 
-> The API key is stored locally in browser storage in obfuscated form.  
-> Requests go directly from the browser to the Google Gemini API without a relay server.
+The key is stored in `chrome.storage.local` in obfuscated form, and requests go directly from the browser to the Gemini API.
 
-### 3. Start translating
+### 3. Translate a video
 
-1. Open a YouTube video that has captions.
-2. Click `Open Transcript` near the video actions to open the transcript panel.
+1. Open a YouTube video with captions.
+2. Click `Open Transcript` near the watch-page actions.
 3. Click `Translate` inside the transcript panel.
-4. Use `Refine`, `Export JSON`, or `Import JSON` from the rebuilt translation surface when you need post-processing or manual bundle reuse.
+4. Use `Refine`, `Export`, or `Import` when you need post-processing or bundle reuse.
 
-## How It Works
+## Main Features
 
-### Reading translated captions
+- Context-aware translation across caption chunks
+- Resume mode for interrupted work
+- Local translation cache with popup management
+- Token usage and estimated cost summaries
+- On-video overlay with drag, resize, and reset interactions
+- JSON bundle export/import for translated subtitles
 
-- Translation progress appears in the panel while work is in progress.
-- Completed text shows up in both the translation panel and the on-video overlay.
-- You can drag the overlay to reposition it and use the mouse wheel to resize the text.
-- Double-clicking the overlay resets its position.
+## Repository Map
 
-### Popup settings
+- `src/`: main TypeScript/Vite runtime
+- `dist/`: built Chrome extension artifact
+- `docs/rebuild/`: migration plan, architecture snapshot, and progress history
+- `extension/`: archived legacy runtime reference during cleanup
 
-- **Gemini API key**: save, reveal, or clear the key used for browser-to-Gemini requests
-- **Thinking Level**: `Minimal`, `Low`, `Medium`, `High`
-- **Language settings**: auto-detect source language and choose a target language
-- **Resume Mode**: continue interrupted translations
-- **Token usage**: review daily and 30-day usage with estimated cost
-- **Cache management**: remove individual entries or clear all cached data
-
-### Rebuilt parity notes
-
-- The default rebuilt runtime now covers translation, resume, refine, JSON export/import, popup settings, API key management, usage tracking, and cache management.
-- The main remaining Phase 6 work is legacy cleanup and manual browser verification across retained YouTube DOM variants.
-
-## Limitations
-
-- It only works on videos with available YouTube caption data.
-- `403`, `429`, and `503` errors can occur depending on Gemini API quota and service status.
-- Installation currently assumes Chrome Developer Mode.
-
-## Repository Guide
-
-This repository keeps documentation in two layers:
-
-- This file: installation and usage for end users
-- [docs/rebuild/architecture.md](docs/rebuild/architecture.md): current runtime architecture and boundaries
-- [docs/rebuild/progress.md](docs/rebuild/progress.md): rebuild status and recent implementation slices
-- [extension/README.md](extension/README.md): legacy implementation reference kept during cleanup
-- [extension/README.ko.md](extension/README.ko.md): Korean legacy technical reference
-
-## Development and Tests
+## Development
 
 ```bash
+npm install
 npm run dev
 npm run build
-npm run rebuild:check
+npm run check
 npm test
 npm run test:coverage
 ```
 
-The root `package.json` now builds the default extension artifact into `dist/`, while Node's built-in test runner still covers both the retained legacy modules and the rebuilt TypeScript runtime during the cleanup phase.
+`npm run check` runs the full local quality gate: typecheck, tests, and production build.
 
-## FAQ
+## Current Status
 
-**Q. Can it translate videos without captions?**  
-A. No. It requires caption data provided by YouTube.
+- The TypeScript/Vite runtime under `src/` is the default implementation.
+- The extension should be loaded from `dist/`, not from `extension/`.
+- The retained `extension/` tree exists only to compare behavior during cleanup work.
+- Manual browser verification still matters when changing YouTube DOM handling or overlay behavior.
 
-**Q. How much does it cost?**  
-A. Cost depends on your Google Gemini API usage. The popup shows estimated usage totals for today and the last 30 days.
+## Limitations
 
-**Q. The translation stopped midway.**  
-A. This is usually caused by network issues, API congestion, or quota limits. If the button switches to a retry state, try again.
+- It only works on videos with available YouTube captions.
+- Gemini quota, overload, or service errors can still surface as `403`, `429`, or `503` failures.
+- Installation currently assumes Chrome Developer Mode.
 
 ## Contact
 

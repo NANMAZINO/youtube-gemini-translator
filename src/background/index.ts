@@ -134,7 +134,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ? error.code
           : 'UNEXPECTED_ERROR';
       const messageText =
-        error instanceof Error ? error.message : 'Unknown rebuild background error';
+        error instanceof Error ? error.message : 'Unknown background runtime error';
       sendResponse(createFailure(message.type, code, messageText));
     });
 
@@ -142,5 +142,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 console.info(
-  `[YT AI Translator Rebuild] Background scaffold loaded (${REBUILD_META.phase}: ${REBUILD_META.title})`,
+  `[YT AI Translator] Background runtime loaded (${REBUILD_META.phase}: ${REBUILD_META.title})`,
 );

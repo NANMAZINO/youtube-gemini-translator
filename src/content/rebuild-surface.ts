@@ -409,7 +409,7 @@ export function createRebuildSurface(options: RebuildSurfaceOptions) {
             <button class="toggle-btn" type="button" data-role="toggle" aria-expanded="true" aria-label="Toggle transcript" title="Toggle transcript">▼</button>
           </div>
           <div class="content-body" data-role="content-body">
-            <section class="progress-panel" aria-label="Rebuild status">
+            <section class="progress-panel" aria-label="Translation status">
               <p class="meta" data-role="progress"></p>
               <p class="detail" data-role="detail" role="status" aria-live="polite"></p>
             </section>
@@ -462,7 +462,7 @@ export function createRebuildSurface(options: RebuildSurfaceOptions) {
       !(emptyValue instanceof HTMLParagraphElement) ||
       !(list instanceof HTMLDivElement)
     ) {
-      throw new Error('Failed to initialize the rebuild surface.');
+      throw new Error('Failed to initialize the translation surface.');
     }
 
     return {
@@ -576,7 +576,7 @@ export function createRebuildSurface(options: RebuildSurfaceOptions) {
 
     const text = shadow.querySelector('[data-role="overlay"]');
     if (!(text instanceof HTMLDivElement)) {
-      throw new Error('Failed to initialize the rebuild overlay.');
+      throw new Error('Failed to initialize the translation overlay.');
     }
 
     applyOverlayLayout(host, text);

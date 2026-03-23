@@ -18,7 +18,7 @@ export const CONTENT_UI_LABELS = Object.freeze({
     idleHint: '',
   },
   monitor: {
-    title: 'YT AI Translator Rebuild',
+    title: 'YT AI Translator',
     slice: 'Slice',
     youtube: 'YouTube',
     task: 'Task',
