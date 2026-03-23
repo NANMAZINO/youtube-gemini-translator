@@ -1,28 +1,33 @@
 // content/captions.js - 자막 추출 및 가공 모듈
 import { estimateTokens } from '../../core/utils.js';
 import {
-  SCRIPT_PANEL_SELECTOR,
   MAX_TOKENS_PER_CHUNK,
   SOFT_LIMIT
 } from '../../core/constants.js';
 import { createLogger } from '../../core/logger.js';
+import {
+  findTranscriptPanel,
+  getTranscriptSegmentElements,
+  getTranscriptSegmentText,
+  getTranscriptSegmentTimestamp,
+} from './transcript-dom.js';
 
 const log = createLogger('Captions');
 
 export async function extractCaptions() {
   try {
-    const transcriptPanel = document.querySelector(SCRIPT_PANEL_SELECTOR);
+    const transcriptPanel = findTranscriptPanel();
     if (!transcriptPanel) return null;
 
-    let segmentElements = transcriptPanel.querySelectorAll('ytd-transcript-segment-renderer');
-    if (!segmentElements || segmentElements.length === 0) {
+    let segmentElements = getTranscriptSegmentElements(transcriptPanel);
+    if (segmentElements.length === 0) {
       await new Promise(r => setTimeout(r, 1000));
-      segmentElements = transcriptPanel.querySelectorAll('ytd-transcript-segment-renderer');
+      segmentElements = getTranscriptSegmentElements(transcriptPanel);
     }
 
-    const rawSegments = Array.from(segmentElements).map(el => {
-      const timestamp = el.querySelector('.segment-timestamp')?.textContent?.trim() || '0:00';
-      const text = el.querySelector('.segment-text')?.textContent?.trim() || '';
+    const rawSegments = segmentElements.map(el => {
+      const timestamp = getTranscriptSegmentTimestamp(el);
+      const text = getTranscriptSegmentText(el);
       return { start: timestamp, text };
     }).filter(s => s.text);
 

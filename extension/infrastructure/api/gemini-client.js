@@ -23,17 +23,18 @@ Translate [Source Segments] into a flawless, natural target language. Your prima
 
 const REFINER_SYSTEM_PROMPT = `
 # Role
-Strict Subtitle Resegmenter & Pacing Optimizer.
+Strict Subtitle Resegmenter & Readability Optimizer.
 
 # Objective
-The provided "Draft Translation" contains high-quality, continuous translated text that may have been merged into overly long segments for context. Your job is to sub-divide and align this text back onto the timeline of the "Original Segments", while intelligently merging micro-intervals to preserve perfect readability and prevent visual flickering.
+The provided "Draft Translation" contains high-quality, continuous translated text. Your primary objective is to sub-divide this text and align it onto the "Original Segments" timeline. You MUST prioritize grammatical correctness, logical flow, and readability over rigid 1:1 timestamp mapping. Ensure the meaning of the subdivided translated chunk aligns broadly with the source text, but do not force unnatural splits.
 
 # Guidelines
-1. Anchor Timing: The "Original Segments" dictate the pace and timing bounds. You must distribute the "Draft Translation" across these timestamps. Do NOT invent new timestamps out of nowhere.
-2. Micro-Chunking: Subdivide the long text into short, highly readable "Meaning Units" (e.g., splitting at particles, conjunctions, or natural pauses). The goal is maximum visual scanability.
-3. Content Integrity: You are NOT translating. You are merely slicing the pre-translated "Draft Translation" and assigning it to the correct "id" and "start" from the original timeline.
-4. Readability First (Smart Merging): Do not force 1:1 segment matching if it destroys readability. If original segments are too close (e.g., under 1 sec apart), prefer merging them into a single natural chunk anchored to the earliest "id" and "start". However, you may retain the rapid original pacing if the translated text is just a short, punchy response (e.g., "Yes", "No", "Right").
-5. **[CRITICAL]** Strict Start-Time Uniqueness: You MUST NEVER output multiple segments with the same "start" time. If timestamps overlap perfectly, merge the text unconditionally.
+1. Prioritize Linguistic Completeness: Your primary goal is to maintain the grammatical correctness and readability of the target language. Do not slice the text artificially just to fit every original timestamp. Divide the text ONLY where natural pauses, punctuation, or independent logical clauses occur.
+2. Cohesive Segmenting over Rigid 1:1 Mapping: Prioritize natural readability over a forced 1:1 split. If a translated phrase or logical unit naturally spans multiple original segments without a clear linguistic break point, keep it as a single cohesive segment. In these cases, assign ONLY the 'start' time and 'id' of the first original segment in that range, and discard all intermediate timestamps.
+3. Anchor Timing: Use the "Original Segments" as your absolute timing bounds. You must strictly utilize only the existing timestamps provided in the source data. DO NOT invent new timings.
+4. Prevent Micro-Fragmentation: Do not create fragments that are too short or lack standalone meaning (e.g., isolated nouns, single particles, or dangling modifiers) just to satisfy a timestamp. A unified, naturally flowing segment is ALWAYS preferred over heavily fragmented, unreadable micro-segments.
+5. **[CRITICAL]** Strict Start-Time Uniqueness: You must assign a uniquely distinct "start" time to every output segment. In cases where original timestamps overlap perfectly, you must combine the corresponding text into one single block.
+6. Source Text Alignment: Compare the original source text with the draft translation. Align the chunks based on semantic meaning, but remember that translation naturally alters word order. Group the text into logical blocks and align them seamlessly with the starting timestamp of that specific block.
 `;
 
 async function postGenerateContent(

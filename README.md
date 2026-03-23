@@ -1,155 +1,111 @@
-[English Version README](README.en.md)
+[README in Korean](README.ko.md) · [Technical README](extension/README.md) · [Korean Technical README](extension/README.ko.md)
 
-[Technical README 보러가기](extension/README.md)
+# YouTube AI Translator
 
-# 🤖 YouTube AI Translator 사용자 가이드
+> A Chrome extension that translates YouTube captions with context in mind.
 
-> **"언어의 장벽 없이, 문맥을 이해하는 AI와 함께 YouTube를 즐기세요."**
+![Chrome Extension](https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-3%20Flash%20Preview-8E75FF?style=flat-square)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES%20Modules-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
-**YouTube AI Translator**는 단순한 번역기가 아닙니다. Google의 최신 **Gemini 3 Flash Preview** 모델을 활용해 영상의 전체 문맥을 이해하고, 자연스러운 한국어/영어/일본어 자막을 실시간으로 제공하는 Chrome 확장 프로그램입니다. 팝업에서 원본 언어(자동 감지)와 번역 언어를 원하는 대로 설정할 수 있어요.
+**YouTube AI Translator** reads YouTube captions, sends them to Google **Gemini 3 Flash Preview**, and renders translated results in real time through both a side panel and an on-video overlay.  
+Instead of translating each line in isolation, it aims to preserve the flow of the surrounding conversation so subtitles read more naturally.
 
----
+## Highlights
 
-## 🌟 소개 (Introduction)
+- **🧠 Context-aware translation**: Carries recent translation context forward for more consistent tone and terminology.
+- **⚡ Real-time rendering**: Progress and translated output appear immediately in both the panel and the overlay.
+- **✂️ Caption refinement**: Re-groups fragmented auto-captions into more readable sentence-like chunks.
+- **⏯️ Resume mode**: Reuses completed chunks after refreshes or interruptions.
+- **🗂️ Local cache**: Stores up to 100 translation entries and removes old ones after 30 days.
+- **📊 Usage tracking**: Shows token usage and estimated cost for today and the last 30 days in the popup.
 
-### 왜 YouTube AI Translator인가요?
+## Quick Start
 
-기존의 자동 번역은 문장을 잘게 끊어 번역하다 보니 문맥이 끊기거나, 대명사가 무엇을 가리키는지 놓치는 경우가 많습니다. **YouTube AI Translator**는 다릅니다.
+### 1. Install the extension
 
-- **🧠 문맥 인식 (Context-Aware):** 앞뒤 내용을 기억해 자연스럽게 이어지는 번역을 제공합니다.
-- **⚡ 실시간 스트리밍:** 번역 진행 상황을 보면서, 번역 결과가 즉시 패널/오버레이로 반영됩니다.
-- **🎯 정밀 재분할 (Refine):** 조각난 자동 자막을 문장 단위로 정리해 더 읽기 좋게 만듭니다.
-- **💰 합리적인 비용:** Google Gemini API의 무료 티어(Free Tier)를 활용해 대부분의 개인 사용자는 무료로 이용 가능합니다.
+This project is currently loaded through Chrome Developer Mode rather than the Chrome Web Store.
 
----
+1. Download or clone this repository.
+2. Open `chrome://extensions` in Chrome.
+3. Enable `Developer mode`.
+4. Click `Load unpacked` and select the `extension` folder from this repository.
 
-## 🚀 설치 방법 (Installation)
+### 2. Add your Gemini API key
 
-현재 이 프로그램은 개발자 모드로 설치할 수 있습니다.
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. Open the extension menu from the Chrome toolbar and click `YouTube AI Translator`.
+3. Paste the key into the popup and save it.
 
-1. **소스 코드 준비**: 전달받은 ZIP을 풀거나 Git으로 코드를 다운로드합니다.
-2. **Chrome 확장 프로그램 관리 페이지 접속**:
-   - 주소창에 `chrome://extensions` 입력
-   - 또는 메뉴(⋮) > 확장 프로그램 > 확장 프로그램 관리
-3. **개발자 모드 켜기**: 우측 상단 **[개발자 모드]** 토글을 **ON**
-4. **확장 프로그램 로드**:
-   - 좌측 상단 **[압축해제된 확장 프로그램을 로드합니다]** 클릭
-   - 프로젝트 내 **`extension`** 폴더 선택
-5. **완료**: 목록에 **"YouTube AI Translator"** 카드가 나타나면 설치 성공!
-   - _팁: 퍼즐 아이콘(🧩) > 핀(📌) 고정하면 더 편해요._
+> The API key is stored locally in browser storage in obfuscated form.  
+> Requests go directly from the browser to the Google Gemini API without a relay server.
 
----
+### 3. Start translating
 
-## 🔑 시작하기 (Getting Started)
+1. Open a YouTube video that has captions.
+2. Click the `📜 Open Script` button that appears near the video actions to open the transcript panel.
+3. Click `AI Translate` at the top of the panel.
 
-사용을 위해서는 Google Gemini API Key가 필요합니다. (1분 소요)
+## How It Works
 
-### 1단계: API Key 발급
+### Reading translated captions
 
-1. [Google AI Studio](https://aistudio.google.com/apikey)에 접속해 Google 계정으로 로그인합니다.
-2. **"Create API Key"** 버튼을 클릭합니다.
-3. 생성된 키(문자열)를 복사합니다.
+- Translation progress appears in the panel while work is in progress.
+- Completed text shows up in both the translation panel and the on-video overlay.
+- You can drag the overlay to reposition it and use the mouse wheel to resize the text.
+- Double-clicking the overlay resets its position.
 
-### 2단계: 확장 프로그램에 키 등록
+### Refinement
 
-1. Chrome 툴바에서 **YouTube AI Translator 아이콘**을 클릭합니다.
-2. 팝업의 **"Gemini API Key"** 입력란에 키를 붙여넣습니다.
-3. **[저장]** 버튼을 클릭합니다.
+If auto-generated captions are too fragmented, use the `Refine` button after translation to regroup them into easier-to-read chunks.
 
-> **보안 안내:** API Key는 브라우저 로컬 스토리지에 난독화(XOR+Base64)되어 저장됩니다. 이 확장 프로그램은 별도의 서버를 운영하지 않으며, 번역 요청은 **브라우저에서 Google Gemini API로 직접 전송**됩니다.
+### Popup settings
 
----
+- **Thinking Level**: `Minimal`, `Low`, `Medium`, `High`
+- **Language settings**: auto-detect source language and choose a target language
+- **Resume Mode**: continue interrupted translations
+- **Token usage**: review daily and 30-day usage with estimated cost
+- **Cache management**: remove individual entries or clear all cached data
 
-## 📖 사용 방법 (User Manual)
+### Export / import JSON
 
-### 1. 스크립트(자막) 패널 열기
+- Use `💾` in the translation panel to export the current translation as JSON.
+- Use `📁` to import a previously saved translation file.
 
-YouTube 영상 페이지에 들어가면 영상 하단 버튼 영역에 **"📜 스크립트 열기"** 버튼이 나타납니다. 클릭하면 우측에 스크립트(자막) 패널이 열립니다.
+## Limitations
 
-### 2. AI 번역 시작
+- It only works on videos with available YouTube caption data.
+- `403`, `429`, and `503` errors can occur depending on Gemini API quota and service status.
+- Installation currently assumes Chrome Developer Mode.
 
-스크립트 패널 상단에 추가된 **"🤖 AI 번역"** 버튼을 클릭하세요.
+## Repository Guide
 
-- AI가 자막을 읽고 번역을 시작합니다(실시간 진행 표시).
-- 번역된 내용은 **영상 위 오버레이 자막**으로도 표시됩니다.
-- 번역 결과는 확장 프로그램의 번역 패널에서도 확인할 수 있습니다.
+This repository keeps documentation in two layers:
 
-> [!TIP]
-> **오버레이 자막 커스텀:**
->
-> - **위치 변경:** 오버레이를 마우스로 드래그해 원하는 위치로 옮길 수 있습니다.
-> - **크기 조절:** 오버레이 위에서 **마우스 휠**로 글자 크기를 실시간 조절할 수 있습니다.
-> - **초기화:** 오버레이를 **더블클릭**하면 위치가 초기화됩니다.
+- This file: installation and usage for end users
+- [extension/README.md](extension/README.md): default English technical structure, modules, and tests
+- [extension/README.ko.md](extension/README.ko.md): Korean technical documentation
 
-### 3. 자막 재분할 (Refine)
+## Development and Tests
 
-자동 생성 자막은 조각나 있어 읽기 불편할 때가 많습니다. 번역이 완료되면 AI 번역 버튼 옆의 **"재분할"** 버튼이 활성화됩니다.
+```bash
+npm test
+npm run test:coverage
+```
 
-- 클릭하면 AI가 문맥을 기준으로 자막 타임라인을 재정렬합니다.
-- 끊긴 단어들이 문장 단위로 정리되어 더 보기 좋아집니다.
+The root `package.json` uses Node's built-in test runner and includes coverage-focused checks for core utilities, retry logic, cache behavior, and resume logic.
 
-### 4. 설정 조절 (옵션)
+## FAQ
 
-확장 프로그램 아이콘을 눌러 팝업에서 설정을 변경할 수 있습니다.
+**Q. Can it translate videos without captions?**  
+A. No. It requires caption data provided by YouTube.
 
-- **추론 레벨 (Thinking Level):**
-  - **Minimal (기본):** 빠르고 경제적. 대부분의 영상에 적합
-  - **Low / Medium / High:** 복잡한 내용·다중 화자 영상에서 더 정교한 번역(토큰/시간 증가 가능)
-- **언어 설정:** 원본 언어(자동 감지)와 번역 언어(한국어/영어/일본어)를 설정합니다.
-- **번역 이어받기(Resume Mode):** 번역이 중단되거나 새로고침(F5)된 경우, **이미 완료된 청크를 재사용**해 이어서 번역합니다(시간/비용 절약).
-- **토큰 사용량:** **오늘 / 30일** 기준 토큰 사용량과 **예상 금액(추정치)**을 확인할 수 있습니다.
-- **캐시 관리:** 저장된 번역 개수/용량을 확인하고, **항목별 삭제 / 전체 삭제**가 가능합니다(최대 100개, 30일 자동 만료).
+**Q. How much does it cost?**  
+A. Cost depends on your Google Gemini API usage. The popup shows estimated usage totals for today and the last 30 days.
 
-### 5. JSON 내보내기/가져오기 (고급)
+**Q. The translation stopped midway.**  
+A. This is usually caused by network issues, API congestion, or quota limits. If the button switches to a retry state, try again.
 
-번역 결과를 파일로 저장하거나, 다른 환경에서 가져올 수 있습니다.
+## Contact
 
-- **내보내기(💾):** 번역 패널 상단의 **💾** 버튼을 클릭하면 현재 번역을 JSON 파일로 저장합니다.
-- **가져오기(📁):** 번역 패널 상단의 **📁** 버튼으로 JSON 파일을 불러와 즉시 적용할 수 있습니다.
-  - 가져온 데이터는 캐시에 자동 저장되며, 같은 영상/언어 조합에 캐시가 있으면 가져오기가 제한될 수 있습니다.
-
-### 6. 태스크 관리
-
-- **자동 중지:** 번역 도중 다른 탭으로 이동하거나 다른 영상을 열면, 배터리/리소스 절약을 위해 진행 중인 번역이 자동으로 즉시 중단됩니다.
-
----
-
-## 💡 자주 묻는 질문 (FAQ)
-
-**Q. 자막이 없는 영상도 번역되나요?**
-
-A. 아니요. YouTube 자막(자동 생성 자막 포함) 데이터가 있어야 번역이 가능합니다. 자막 데이터가 없는 영상은 지원하지 않습니다.
-
-**Q. 비용은 얼마나 드나요?**
-
-A. Google Gemini API는 개인 사용자에게 **상당한 무료 사용량(Free Tier)**을 제공합니다. 일반적인 YouTube 시청 패턴에서는 무료 한도 내에서 충분한 경우가 많습니다.
-
-- 팝업의 **토큰 사용량**에서 **오늘/30일** 사용량과 **예상 금액(추정치)**을 확인할 수 있습니다.
-
-**Q. 번역이 멈췄어요.**
-
-A. 일시적인 네트워크 오류, 서버 혼잡(429/503), 또는 할당량 제한(403)일 수 있습니다.
-
-- 버튼이 "재시도" 상태가 되면 다시 클릭해 주세요.
-- 자동으로 최대 3회까지 재시도를 수행합니다.
-
-**Q. 영상을 다시 볼 때마다 번역해야 하나요?**
-
-A. 아니요! 번역 내용은 **30일 동안 자동으로 캐시**됩니다. 재방문 시 즉시 번역이 표시될 수 있습니다.
-
-- 캐시 상태는 팝업의 **캐시 관리**에서 확인/삭제할 수 있습니다.
-
----
-
-## 🛠 문제 해결 (Troubleshooting)
-
-- **403 에러:** API 할당량(Free Tier) 초과 또는 키/프로젝트 권한 문제일 수 있습니다. 잠시 후 재시도하거나 AI Studio에서 키/요금제 상태를 확인해 주세요.
-- **429/503 에러:** 서버가 혼잡합니다. 1~2분 기다린 뒤 다시 시도해 주세요.
-
----
-
-YouTube AI Translator와 함께, 전 세계의 지식과 재미를 언어 장벽 없이 탐험하세요! 🌍✨
-
----
-
-imxtraa7@gmail.com
+`imxtraa7@gmail.com`

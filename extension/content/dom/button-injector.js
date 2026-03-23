@@ -1,10 +1,11 @@
 // content/button-injector.js
 // 유튜브 패널/헤더에 액션 버튼들을 주입하는 모듈
+import { findTranscriptPanel, isTranscriptPanelOpen } from './transcript-dom.js';
+import { UI_LABELS } from '../../core/ui-icons.js';
 
 export function createButtonInjector({
   showNotification,
   openTranscriptPanel,
-  SCRIPT_PANEL_SELECTOR,
   FLOATING_BUTTON_ID,
   TRANSLATE_BUTTON_ID,
   RE_SPLIT_BUTTON_ID,
@@ -31,12 +32,12 @@ export function createButtonInjector({
 
     const btn = document.createElement('button');
     btn.id = FLOATING_BUTTON_ID;
-    btn.innerHTML = '📜 스크립트 열기';
+    btn.textContent = UI_LABELS.transcriptOpen;
     btn.className = 'yt-ai-floating-btn';
 
     btn.onclick = async () => {
-      const panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
-      const isPanelVisible = panel && !panel.hidden && panel.offsetHeight > 0;
+      const panel = findTranscriptPanel();
+      const isPanelVisible = isTranscriptPanelOpen(panel);
 
       if (isPanelVisible) {
         showNotification('이미 스크립트 창이 열려 있습니다.', 'info');
@@ -76,7 +77,7 @@ export function createButtonInjector({
 
     const mainBtn = document.createElement('button');
     mainBtn.id = TRANSLATE_BUTTON_ID;
-    mainBtn.textContent = '🤖 AI 번역';
+    mainBtn.textContent = UI_LABELS.translate;
     mainBtn.className = 'yt-ai-btn yt-ai-btn-main';
     mainBtn.onclick = (e) => {
       e.stopPropagation();
@@ -85,13 +86,13 @@ export function createButtonInjector({
 
     const refineBtn = document.createElement('button');
     refineBtn.id = RE_SPLIT_BUTTON_ID;
-    refineBtn.textContent = '재분할';
+    refineBtn.textContent = UI_LABELS.refine;
     refineBtn.disabled = true;
     refineBtn.className = 'yt-ai-btn yt-ai-btn-refine';
 
     const toggleBtn = document.createElement('button');
     toggleBtn.id = PANEL_TOGGLE_BUTTON_ID;
-    toggleBtn.textContent = '📑';
+    toggleBtn.textContent = UI_LABELS.panelClosed;
     toggleBtn.title = '스크립트 패널 열기/닫기';
     toggleBtn.className = 'yt-ai-btn yt-ai-btn-toggle is-closed';
     toggleBtn.onclick = (e) => {

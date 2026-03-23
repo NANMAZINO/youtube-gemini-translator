@@ -1,5 +1,7 @@
 // content/panel-controller.js
 // 사이드 패널 토글/열기와 버튼 상태 관리
+import { UI_LABELS } from '../../core/ui-icons.js';
+
 export function createPanelController({
   openTranscriptPanel,
   ensureUIReady,
@@ -66,7 +68,7 @@ export function createPanelController({
       if (cached.isPartial) {
         updateExtRefineButton(false);
       } else if (cached.isRefined) {
-        updateExtRefineButton(false, null, '✅ 재분할 완료');
+        updateExtRefineButton(false, null, UI_LABELS.refineDone);
       } else if (rawCaptions) {
         updateExtRefineButton(true, () => startRefine(videoId, rawCaptions, cached.translations));
       } else {
@@ -90,7 +92,7 @@ export function createPanelController({
     const isOpen = !!document.getElementById(SHADOW_HOST_ID);
     button.classList.remove('is-open', 'is-closed');
     button.classList.add(isOpen ? 'is-open' : 'is-closed');
-    button.textContent = isOpen ? '✕ 닫기' : '📌';
+    button.textContent = isOpen ? UI_LABELS.panelOpen : UI_LABELS.panelClosed;
 
     updateImportButtonState();
   }

@@ -2,8 +2,6 @@
 import { parseTimestamp } from '../../core/utils.js';
 import {
   SHADOW_HOST_ID,
-  SCRIPT_PANEL_SELECTOR,
-  TRANSCRIPT_ITEMS_SELECTOR,
   IMPORT_BUTTON_ID,
   DEFAULT_MIN_HEIGHT_PX,
   PANEL_MIN_HEIGHT_RELEASE_MS,
@@ -16,6 +14,8 @@ import {
   updateOverlayText,
 } from './ui-overlay.js';
 import { createLogger } from '../../core/logger.js';
+import { findTranscriptContainer, findTranscriptPanel } from '../dom/transcript-dom.js';
+import { UI_ICONS, UI_LABELS } from '../../core/ui-icons.js';
 
 const log = createLogger('UI');
 
@@ -48,38 +48,17 @@ export function setUIActionHandlers(handlers = {}) {
 
 export function prepareRenderingContainer() {
   let shadowHost = document.getElementById(SHADOW_HOST_ID);
-
-  let panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
-
-  // 패널 탐색 강화
-  if (!panel) {
-    panel = Array.from(
-      document.querySelectorAll(
-        'ytd-engagement-panel-section-list-renderer',
-      ),
-    ).find(
-      (el) =>
-        el.getAttribute('target-id')?.includes('transcript') ||
-        el.id === 'transcript-panel',
-    );
-  }
+  const panel = findTranscriptPanel();
 
   if (!panel) {
     log.warn('Script panel not found');
     return null;
   }
 
-  // 컨테이너 탐색: 세그먼트 리스트가 아직 없어도 패널 내부 컨텐츠 영역 사용
-  let transcriptContainer =
-    panel.querySelector(TRANSCRIPT_ITEMS_SELECTOR) ||
-    panel.querySelector('#segments-container') ||
-    panel.querySelector('ytd-transcript-renderer') ||
-    panel.querySelector('#content');
-
-  // 만약 위에서 못 찾았으면 최후의 수단으로 #body나 패널 자체를 보지만,
-  // 실제 자막 리스트인 TRANSCRIPT_ITEMS_SELECTOR를 숨기는 것이 핵심임
-  if (!transcriptContainer) {
-    transcriptContainer = panel.querySelector('#body') || panel;
+  const transcriptContainer = findTranscriptContainer(panel);
+  if (!transcriptContainer?.parentNode) {
+    log.warn('Transcript container not found');
+    return null;
   }
 
   if (shadowHost && !shadowHost.isConnected) {
@@ -213,7 +192,7 @@ function createLayout(host) {
   headerLeft.className = 'header-left';
 
   const title = document.createElement('span');
-  title.textContent = '✨ AI 번역 스크립트';
+  title.textContent = UI_LABELS.title;
 
   const hint = document.createElement('span');
   hint.className = 'header-hint';
@@ -226,7 +205,7 @@ function createLayout(host) {
 
   const syncBtn = document.createElement('button');
   syncBtn.className = 'sync-btn';
-  syncBtn.textContent = '📌';
+  syncBtn.textContent = UI_ICONS.pin;
   syncBtn.title = '자동 추적 중';
   syncBtn.onclick = () => {
     isAutoScrollEnabled = true;
@@ -236,14 +215,14 @@ function createLayout(host) {
 
   const exportBtn = document.createElement('button');
   exportBtn.className = 'export-btn';
-  exportBtn.textContent = '💾';
+  exportBtn.textContent = UI_ICONS.export;
   exportBtn.title = 'JSON으로 내보내기 (번역 완료 후 활성화)';
   exportBtn.id = 'yt-ai-export-btn';
   exportBtn.disabled = true;
 
   const importBtn = document.createElement('button');
   importBtn.className = 'import-btn';
-  importBtn.textContent = '📁';
+  importBtn.textContent = UI_ICONS.import;
   importBtn.title = 'JSON 가져오기';
   importBtn.id = IMPORT_BUTTON_ID;
 
@@ -576,19 +555,10 @@ export async function clearUI(keepButtons = false) {
   }
 
   // 1. 원본 자막 복구
-  const panel = document.querySelector(SCRIPT_PANEL_SELECTOR);
-  if (panel) {
-    // prepareRenderingContainer와 동일한 로직으로 컨테이너 탐색
-    const transcriptContainer =
-      panel.querySelector(TRANSCRIPT_ITEMS_SELECTOR) ||
-      panel.querySelector('#segments-container') ||
-      panel.querySelector('ytd-transcript-renderer') ||
-      panel.querySelector('#content') ||
-      panel.querySelector('#body');
-
-    if (transcriptContainer) {
-      transcriptContainer.style.setProperty('display', 'block', 'important');
-    }
+  const panel = findTranscriptPanel();
+  const transcriptContainer = findTranscriptContainer(panel);
+  if (transcriptContainer) {
+    transcriptContainer.style.removeProperty('display');
   }
 
   // 2. 버튼 컨테이너 제거 (keepButtons가 false인 경우에만 - 네비게이션 시 등)
