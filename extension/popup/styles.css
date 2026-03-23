@@ -177,6 +177,12 @@ main {
   gap: 2px;
 }
 
+.hero-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .hero h1,
 .card h2 {
   margin: 0;
@@ -190,6 +196,22 @@ main {
   font-size: 17px;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  user-select: none;
 }
 
 .card h2 {
@@ -486,6 +508,18 @@ a:focus-visible {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.stat-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-badge-sm {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
 }
 
 .stat-card strong {

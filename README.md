@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini" />
+  <img src="https://img.shields.io/badge/Browser%20Extension-MV3-4285F4?style=for-the-badge" alt="Browser Extension" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge" alt="Vite" />
+  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge" alt="Gemini API" />
 </p>
 
 <p align="center">
@@ -20,6 +20,12 @@
 </p>
 
 ---
+
+## Disclaimer
+
+This is an unofficial developer tool. It is not affiliated with, endorsed by, or sponsored by YouTube or Google.
+
+`YouTube` and `Gemini` are referenced only to describe compatibility and runtime behavior.
 
 ## ✨ What It Does
 
@@ -55,6 +61,9 @@ npm run build
 
 > [!TIP]
 > The API key is stored in `chrome.storage.local` in obfuscated form. All Gemini requests go directly from your browser — nothing passes through an external server.
+
+> [!CAUTION]
+> Exported or cached subtitle bundles may include copyrighted caption or translation text. You are responsible for complying with the rights and redistribution rules that apply to the source content.
 
 ## 🏗️ How It Works
 
@@ -147,6 +156,10 @@ npm run test:coverage    # Coverage gate for key runtime modules
 - Only works on videos with available YouTube captions
 - Gemini quota, overload, or service errors may surface as `403`, `429`, or `503` failures
 - Installation requires Chrome Developer Mode
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).
 
 ## 📬 Contact
 

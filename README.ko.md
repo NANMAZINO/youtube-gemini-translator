@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Chrome%20Extension-MV3-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini" />
+  <img src="https://img.shields.io/badge/Browser%20Extension-MV3-4285F4?style=for-the-badge" alt="Browser Extension" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge" alt="Vite" />
+  <img src="https://img.shields.io/badge/Gemini%20API-Direct-8E75B2?style=for-the-badge" alt="Gemini API" />
 </p>
 
 <p align="center">
@@ -20,6 +20,12 @@
 </p>
 
 ---
+
+## 안내
+
+이 프로젝트는 비공식 개발 도구이며 YouTube 또는 Google과 제휴, 후원, 승인 관계가 없습니다.
+
+`YouTube`, `Gemini` 표기는 호환 대상과 동작 방식을 설명하기 위한 목적에 한해 사용됩니다.
 
 ## ✨ 어떤 확장인가요
 
@@ -55,6 +61,9 @@ npm run build
 
 > [!TIP]
 > API Key는 `chrome.storage.local`에 난독화 형태로 저장됩니다. 모든 Gemini 요청은 브라우저에서 직접 전송되며, 외부 서버를 경유하지 않습니다.
+
+> [!CAUTION]
+> 내보내기되거나 캐시된 자막 번들에는 저작권이 있는 자막 또는 번역문이 포함될 수 있습니다. 원본 콘텐츠에 적용되는 권리와 재배포 규칙을 준수할 책임은 사용자에게 있습니다.
 
 ## 🏗️ 동작 방식
 
@@ -147,6 +156,10 @@ npm run test:coverage    # 핵심 런타임 모듈 coverage 게이트
 - YouTube 자막이 제공되는 영상에서만 동작합니다
 - Gemini 할당량 또는 서비스 상태에 따라 `403`, `429`, `503` 오류가 발생할 수 있습니다
 - 설치 시 Chrome 개발자 모드가 필요합니다
+
+## 📄 라이선스
+
+[MIT License](LICENSE)로 배포됩니다.
 
 ## 📬 연락처
 

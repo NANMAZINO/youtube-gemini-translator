@@ -1,7 +1,8 @@
 const manifest = {
   manifest_version: 3,
   name: 'YouTube AI Translator',
-  description: 'Context-aware YouTube caption translation powered by Gemini.',
+  description:
+    'Unofficial browser extension for context-aware YouTube caption translation with Gemini. Not affiliated with YouTube or Google.',
   version: '3.0.0',
   permissions: ['activeTab', 'storage', 'scripting', 'unlimitedStorage'],
   host_permissions: [
