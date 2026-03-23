@@ -8,7 +8,7 @@ import {
   saveCacheRecord,
   savePartialCacheRecord,
 } from './cache-storage.ts';
-import { STORAGE_KEYS } from './schema.ts';
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './schema.ts';
 
 function createStorageLocalMock() {
   const store = Object.create(null);
@@ -85,6 +85,10 @@ test.beforeEach(() => {
 });
 
 test('saveCacheRecord stores metadata with an explicit cacheKey', async () => {
+  await chrome.storage.local.set({
+    [LEGACY_STORAGE_KEYS.cacheSchemaVersion]: 1,
+  });
+
   const record = await saveCacheRecord(
     'video-a',
     [{ start: '0:01', text: 'hello' }],
@@ -112,6 +116,10 @@ test('saveCacheRecord stores metadata with an explicit cacheKey', async () => {
   const metadata = await listCacheMetadata();
   assert.equal(metadata.length, 1);
   assert.equal(metadata[0].cacheKey, 'video-a_English');
+
+  const snapshot = storageMock.snapshot();
+  assert.equal(snapshot[STORAGE_KEYS.cacheSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.cacheSchemaVersion], undefined);
 });
 
 test('savePartialCacheRecord updates data without changing the cache index order', async () => {
@@ -175,7 +183,7 @@ test('savePartialCacheRecord creates an index entry when the cache key is new', 
 
 test('cache schema mismatch invalidates stored cache entries', async () => {
   await chrome.storage.local.set({
-    [STORAGE_KEYS.cacheSchemaVersion]: 99,
+    [LEGACY_STORAGE_KEYS.cacheSchemaVersion]: 99,
     [STORAGE_KEYS.cacheIndex]: [
       {
         videoId: 'video-c_English',
@@ -201,6 +209,7 @@ test('cache schema mismatch invalidates stored cache entries', async () => {
   assert.equal(snapshot[STORAGE_KEYS.cacheIndex], undefined);
   assert.equal(snapshot[`${STORAGE_KEYS.cacheDataPrefix}video-c_English`], undefined);
   assert.equal(snapshot[STORAGE_KEYS.cacheSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.cacheSchemaVersion], undefined);
 });
 
 test('clearCacheRecords removes cached data and leaves the active schema marker', async () => {
@@ -221,11 +230,12 @@ test('clearCacheRecords removes cached data and leaves the active schema marker'
 
   const snapshot = storageMock.snapshot();
   assert.equal(snapshot[STORAGE_KEYS.cacheSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.cacheSchemaVersion], undefined);
 });
 
 test('clearCacheRecords removes orphaned cache data keys that are missing from the index', async () => {
   await chrome.storage.local.set({
-    [STORAGE_KEYS.cacheSchemaVersion]: 1,
+    [LEGACY_STORAGE_KEYS.cacheSchemaVersion]: 1,
     [`${STORAGE_KEYS.cacheDataPrefix}orphan_English`]: {
       videoId: 'orphan_English',
       originalVideoId: 'orphan',
@@ -243,4 +253,38 @@ test('clearCacheRecords removes orphaned cache data keys that are missing from t
   const snapshot = storageMock.snapshot();
   assert.equal(snapshot[`${STORAGE_KEYS.cacheDataPrefix}orphan_English`], undefined);
   assert.equal(snapshot[STORAGE_KEYS.cacheSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.cacheSchemaVersion], undefined);
+});
+
+test('listCacheMetadata migrates a compatible legacy schema marker without clearing data', async () => {
+  await chrome.storage.local.set({
+    [LEGACY_STORAGE_KEYS.cacheSchemaVersion]: 1,
+    [STORAGE_KEYS.cacheIndex]: [
+      {
+        videoId: 'video-legacy_English',
+        title: 'Video Legacy',
+        sourceLang: 'Auto',
+        targetLang: 'English',
+        timestamp: Date.now(),
+      },
+    ],
+    [`${STORAGE_KEYS.cacheDataPrefix}video-legacy_English`]: {
+      videoId: 'video-legacy_English',
+      originalVideoId: 'video-legacy',
+      title: 'Video Legacy',
+      sourceLang: 'Auto',
+      targetLang: 'English',
+      timestamp: Date.now(),
+      translations: [{ start: '0:01', text: 'hello again' }],
+    },
+  });
+
+  const metadata = await listCacheMetadata();
+
+  assert.equal(metadata.length, 1);
+  assert.equal(metadata[0].cacheKey, 'video-legacy_English');
+
+  const snapshot = storageMock.snapshot();
+  assert.equal(snapshot[STORAGE_KEYS.cacheSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.cacheSchemaVersion], undefined);
 });

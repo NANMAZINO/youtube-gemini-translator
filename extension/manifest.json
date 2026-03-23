@@ -31,7 +31,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["content/*.js", "content/*/*.js", "core/*.js", "infrastructure/*/*.js"],
+      "resources": ["content/*/*.js", "core/*.js", "infrastructure/*/*.js"],
       "matches": ["https://www.youtube.com/*"]
     }
   ]

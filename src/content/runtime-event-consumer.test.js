@@ -14,7 +14,7 @@ test('projectRuntimeEvent tracks translation progress and completion', () => {
   projection = projectRuntimeEvent(
     projection,
     {
-      kind: 'rebuild.event',
+      kind: 'runtime.event',
       type: 'translation.progress',
       payload: {
         taskId: 'task-1',
@@ -38,7 +38,7 @@ test('projectRuntimeEvent tracks translation progress and completion', () => {
   projection = projectRuntimeEvent(
     projection,
     {
-      kind: 'rebuild.event',
+      kind: 'runtime.event',
       type: 'translation.completed',
       payload: {
         taskId: 'task-1',
@@ -65,7 +65,7 @@ test('projectRuntimeEvent normalizes refine retry and failure states', () => {
   let projection = createInitialRuntimeTaskProjection();
 
   projection = projectRuntimeEvent(projection, {
-    kind: 'rebuild.event',
+    kind: 'runtime.event',
     type: 'translation.retrying',
     payload: {
       taskId: 'task-2',
@@ -77,7 +77,7 @@ test('projectRuntimeEvent normalizes refine retry and failure states', () => {
   });
 
   projection = projectRuntimeEvent(projection, {
-    kind: 'rebuild.event',
+    kind: 'runtime.event',
     type: 'refine.failed',
     payload: {
       taskId: 'task-2',
@@ -111,7 +111,7 @@ test('createRuntimeEventConsumer ignores unrelated messages and publishes update
   assert.equal(updates.length, 0);
 
   consumer.handleMessage({
-    kind: 'rebuild.event',
+    kind: 'runtime.event',
     type: 'translation.cancelled',
     payload: {
       taskId: 'task-3',

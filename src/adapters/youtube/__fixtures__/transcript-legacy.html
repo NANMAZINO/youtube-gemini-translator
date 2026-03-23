@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <body>
+    <ytd-watch-metadata>
+      <ytd-video-description-transcript-section-renderer>
+        <button id="show-transcript-button" type="button">Show transcript</button>
+      </ytd-video-description-transcript-section-renderer>
+    </ytd-watch-metadata>
+
+    <ytd-engagement-panel-section-list-renderer
+      id="watch-transcript-panel"
+      target-id="engagement-panel-searchable-transcript"
+    >
+      <ytd-transcript-renderer id="content">
+        <ytd-transcript-segment-list-renderer>
+          <div id="segments-container">
+            <ytd-transcript-segment-renderer id="legacy-segment-1">
+              <div class="segment-timestamp">0:00</div>
+              <div class="segment-text">Hello world.</div>
+            </ytd-transcript-segment-renderer>
+            <ytd-transcript-segment-renderer id="legacy-segment-2">
+              <div class="segment-timestamp">0:04</div>
+              <div class="segment-text">Thanks for watching.</div>
+            </ytd-transcript-segment-renderer>
+          </div>
+        </ytd-transcript-segment-list-renderer>
+      </ytd-transcript-renderer>
+    </ytd-engagement-panel-section-list-renderer>
+  </body>
+</html>

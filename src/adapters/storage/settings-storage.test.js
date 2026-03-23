@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { getSettings, saveSettings } from './settings-storage.ts';
-import { STORAGE_KEYS } from './schema.ts';
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './schema.ts';
 
 function createStorageLocalMock() {
   const store = Object.create(null);
@@ -76,7 +76,7 @@ test('getSettings normalizes invalid legacy storage values', async () => {
     [STORAGE_KEYS.targetLang]: 'Deutsch',
     [STORAGE_KEYS.thinkingLevel]: 'turbo',
     [STORAGE_KEYS.resumeMode]: 'yes',
-    [STORAGE_KEYS.settingsSchemaVersion]: 7,
+    [LEGACY_STORAGE_KEYS.settingsSchemaVersion]: 7,
   });
 
   const settings = await getSettings();
@@ -88,9 +88,17 @@ test('getSettings normalizes invalid legacy storage values', async () => {
     resumeMode: true,
     schemaVersion: 7,
   });
+
+  const snapshot = storageMock.snapshot();
+  assert.equal(snapshot[STORAGE_KEYS.settingsSchemaVersion], 7);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.settingsSchemaVersion], undefined);
 });
 
 test('saveSettings normalizes unsupported values before persisting', async () => {
+  await chrome.storage.local.set({
+    [LEGACY_STORAGE_KEYS.settingsSchemaVersion]: 9,
+  });
+
   const settings = await saveSettings({
     sourceLang: 'Français',
     targetLang: 'Deutsch',
@@ -112,4 +120,5 @@ test('saveSettings normalizes unsupported values before persisting', async () =>
   assert.equal(snapshot[STORAGE_KEYS.thinkingLevel], 'minimal');
   assert.equal(snapshot[STORAGE_KEYS.resumeMode], false);
   assert.equal(snapshot[STORAGE_KEYS.settingsSchemaVersion], 1);
+  assert.equal(snapshot[LEGACY_STORAGE_KEYS.settingsSchemaVersion], undefined);
 });

@@ -43,7 +43,7 @@ interface ContentActionControlsOptions {
   onOpenTranscript: () => void;
   onStartTranslation: () => void;
   onCancelTask: (task: RuntimeTaskViewState | null) => void;
-  /** rebuild-surface 내부의 Translate/Cancel 요소 접근용 콜백 */
+  /** Translation surface 내부의 Translate/Cancel 요소 접근용 콜백 */
   getSurfaceActionElements: () => {
     translateButton: HTMLButtonElement;
     cancelButton: HTMLButtonElement;

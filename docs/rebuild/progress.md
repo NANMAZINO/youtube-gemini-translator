@@ -9,9 +9,51 @@
 | Phase 3 pure domain port | Done | Transcript, resume, retry, Gemini request building, and cache compatibility logic now live in `src/` |
 | Phase 4 background/popup rebuild | Done | Typed translation start/resume/cancel and refine orchestration now run in `src/background`, and `src/content` projects typed task events into a lightweight preview monitor |
 | Phase 5 content/UI rebuild | Done | Typed YouTube adapters, preview controls, label registry, and panel/overlay surface now live under `src/` |
-| Phase 6 cutover | In Progress | Default build/dev/docs now point at `src` and `dist`; legacy runtime cleanup still pending |
+| Phase 6 cutover | Done | `src/` and `dist/` are now the default runtime and build path |
+| Post-cutover cleanup | Done | DOM fixtures, regression checklist, CI gate, and release cutover follow-ups are all checked in |
 
 ## 2026-03-24
+
+### Session Start
+
+- **In Progress:** finish the remaining post-cutover release work by checking in transcript DOM fixtures, freezing the regression checklist, adding a CI `npm run check` gate, and cutting the first stable runtime release version
+
+### Session End
+
+- **Done:** added checked-in legacy and modern YouTube transcript HTML fixtures plus `jsdom`-backed tests for transcript capability detection, extraction, and attribute-only panel opening
+- **Done:** published `docs/rebuild/transcript-regression-checklist.md` so manual release verification now has a fixed checklist beside the automated fixture coverage
+- **Done:** added `.github/workflows/check.yml` so GitHub runs `npm run check` on pushes and pull requests
+- **Done:** migrated active storage schema markers away from rebuild-prefixed keys while preserving fallback compatibility for existing stored data
+- **Done:** bumped the typed runtime manifest version to `3.0.0` for the first post-cutover stable release line
+- **Decision:** keep `docs/rebuild/` as the migration-history namespace and keep `extension/` as a minimal regression reference instead of deleting historical context entirely
+- **Risk:** live browser verification is still the only way to confirm current YouTube production DOM behavior after future upstream markup changes, even with fixtures and CI in place
+- **Validation:** `npm run check`, `npm run test:coverage`
+
+### Session Start
+
+- **In Progress:** trim the last clearly unused legacy duplicate entrypoints under `extension/` so the archived reference tree stops carrying parallel flat-module stacks
+
+### Session End
+
+- **Done:** removed the obsolete `extension/lib/*` layer plus the unused flat `extension/content/*.js` and `extension/background.js` duplicate entrypoints that were no longer referenced by the retained legacy manifest path
+- **Done:** updated legacy coverage targets and the archived legacy README structure so tests and docs point at the still-retained reference modules instead of deleted duplicates
+- **Decision:** keep `extension/content.js` and the nested `content/app|dom|flow|ui/*` plus `background/service-worker.js` structure as the minimal archived legacy runtime slice until DOM fixtures and regression checklists are captured
+- **Next:** capture old/new YouTube transcript DOM fixtures and freeze the regression checklist so the remaining legacy reference can be trimmed with confidence
+- **Validation:** `npm run check`, `npm run test:coverage`
+
+### Session Start
+
+- **In Progress:** present the typed runtime as the mainline extension path instead of a rebuild preview, then refresh the user-facing and legacy-facing README set to match
+
+### Session End
+
+- **Done:** promoted `npm run check` to the primary local quality gate while keeping `rebuild:check` as a compatibility alias
+- **Done:** refreshed the English and Korean root READMEs so they describe `src/` as the main runtime, `dist/` as the load target, and `extension/` as an archived legacy reference
+- **Done:** rewrote the legacy technical READMEs so they clearly frame `extension/` as reference-only instead of a competing primary runtime
+- **Done:** removed the remaining user-facing `Rebuild` copy from runtime labels, status text, and console prefixes that still leaked cutover terminology into the default experience
+- **Decision:** keep `docs/rebuild/` as the migration-history location even though the default runtime cutover is complete, so cleanup work can keep a stable audit trail
+- **Next:** trim duplicated legacy slices under `extension/` in smaller cleanup passes and decide later whether internal `rebuild.*` protocol names are worth a dedicated rename
+- **Validation:** `npm run check`
 
 ### Session Start
 

@@ -3,12 +3,12 @@ import test from 'node:test';
 
 import {
   findActiveTranslationIndex,
-  projectRebuildSurfaceState,
+  projectTranslationSurfaceState,
 } from './surface-state.ts';
 import { CONTENT_UI_LABELS } from './ui-labels.ts';
 
-test('projectRebuildSurfaceState prefers active task state over idle capability state', () => {
-  const state = projectRebuildSurfaceState({
+test('projectTranslationSurfaceState prefers active task state over idle capability state', () => {
+  const state = projectTranslationSurfaceState({
     capability: {
       transcriptButtonFound: true,
       panelFound: true,
@@ -40,13 +40,13 @@ test('projectRebuildSurfaceState prefers active task state over idle capability 
   assert.equal(state.detailText, 'Chunk 2 complete.');
 });
 
-test('projectRebuildSurfaceState exposes completed translations to the panel and overlay', () => {
+test('projectTranslationSurfaceState exposes completed translations to the panel and overlay', () => {
   const translations = [
     { start: '0:01', text: 'hello' },
     { start: '0:03', text: 'world' },
   ];
 
-  const state = projectRebuildSurfaceState({
+  const state = projectTranslationSurfaceState({
     capability: {
       transcriptButtonFound: true,
       panelFound: true,
@@ -80,8 +80,8 @@ test('projectRebuildSurfaceState exposes completed translations to the panel and
   assert.equal(state.refineEnabled, true);
 });
 
-test('projectRebuildSurfaceState exposes cached preview translations without an active task', () => {
-  const state = projectRebuildSurfaceState({
+test('projectTranslationSurfaceState exposes cached preview translations without an active task', () => {
+  const state = projectTranslationSurfaceState({
     capability: {
       transcriptButtonFound: true,
       panelFound: true,
@@ -112,8 +112,8 @@ test('projectRebuildSurfaceState exposes cached preview translations without an 
   assert.equal(state.importEnabled, false);
 });
 
-test('projectRebuildSurfaceState disables refine when the visible result is already refined', () => {
-  const state = projectRebuildSurfaceState({
+test('projectTranslationSurfaceState disables refine when the visible result is already refined', () => {
+  const state = projectTranslationSurfaceState({
     capability: {
       transcriptButtonFound: true,
       panelFound: true,
@@ -144,8 +144,8 @@ test('projectRebuildSurfaceState disables refine when the visible result is alre
   assert.equal(state.refineLabel, 'Refined');
 });
 
-test('projectRebuildSurfaceState keeps import available when only a hidden partial cache exists', () => {
-  const state = projectRebuildSurfaceState({
+test('projectTranslationSurfaceState keeps import available when only a hidden partial cache exists', () => {
+  const state = projectTranslationSurfaceState({
     capability: {
       transcriptButtonFound: true,
       panelFound: true,

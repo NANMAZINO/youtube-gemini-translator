@@ -10,7 +10,7 @@ import type {
   TranslationChunk,
 } from '../../shared/contracts/transcript.ts';
 import { DEFAULT_SETTINGS } from '../../shared/contracts/settings.ts';
-import { STORAGE_KEYS } from './schema.ts';
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './schema.ts';
 
 const MAX_CACHE_ENTRIES = 100;
 const CACHE_TTL_DAYS = 30;
@@ -172,12 +172,30 @@ function normalizeCacheRecord(
   };
 }
 
+function getStoredCacheSchemaVersion(result: Record<string, unknown>) {
+  const activeVersion = result[STORAGE_KEYS.cacheSchemaVersion];
+  if (typeof activeVersion === 'number') {
+    return activeVersion;
+  }
+
+  const legacyVersion = result[LEGACY_STORAGE_KEYS.cacheSchemaVersion];
+  return typeof legacyVersion === 'number' ? legacyVersion : undefined;
+}
+
+async function syncCacheSchemaVersion(version: number) {
+  await chrome.storage.local.set({
+    [STORAGE_KEYS.cacheSchemaVersion]: version,
+  });
+  await chrome.storage.local.remove(LEGACY_STORAGE_KEYS.cacheSchemaVersion);
+}
+
 async function removeAllCacheEntries() {
   const allItems = await chrome.storage.local.get(null);
   const cacheKeys = Object.keys(allItems).filter(
     (key) =>
       key === STORAGE_KEYS.cacheIndex ||
       key === STORAGE_KEYS.cacheSchemaVersion ||
+      key === LEGACY_STORAGE_KEYS.cacheSchemaVersion ||
       key.startsWith(STORAGE_KEYS.cacheDataPrefix),
   );
 
@@ -187,8 +205,13 @@ async function removeAllCacheEntries() {
 }
 
 async function ensureCompatibleCacheSchema() {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.cacheSchemaVersion);
-  const storedVersion = result[STORAGE_KEYS.cacheSchemaVersion];
+  const result = await chrome.storage.local.get([
+    STORAGE_KEYS.cacheSchemaVersion,
+    LEGACY_STORAGE_KEYS.cacheSchemaVersion,
+  ]);
+  const storedVersion = getStoredCacheSchemaVersion(result);
+  const hasLegacySchemaMarker =
+    typeof result[LEGACY_STORAGE_KEYS.cacheSchemaVersion] === 'number';
 
   if (
     typeof storedVersion === 'number' &&
@@ -197,10 +220,8 @@ async function ensureCompatibleCacheSchema() {
     await removeAllCacheEntries();
   }
 
-  if (storedVersion !== CACHE_SCHEMA_VERSION) {
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.cacheSchemaVersion]: CACHE_SCHEMA_VERSION,
-    });
+  if (storedVersion !== CACHE_SCHEMA_VERSION || hasLegacySchemaMarker) {
+    await syncCacheSchemaVersion(CACHE_SCHEMA_VERSION);
   }
 }
 
@@ -347,6 +368,7 @@ export async function saveCacheRecord(
     [STORAGE_KEYS.cacheIndex]: nextIndex,
     [STORAGE_KEYS.cacheSchemaVersion]: CACHE_SCHEMA_VERSION,
   });
+  await chrome.storage.local.remove(LEGACY_STORAGE_KEYS.cacheSchemaVersion);
 
   return normalizeCacheRecord(cacheKey, record, CACHE_SCHEMA_VERSION);
 }
@@ -381,6 +403,7 @@ export async function savePartialCacheRecord(
     [getDataKey(cacheKey)]: record,
     [STORAGE_KEYS.cacheSchemaVersion]: CACHE_SCHEMA_VERSION,
   });
+  await chrome.storage.local.remove(LEGACY_STORAGE_KEYS.cacheSchemaVersion);
 
   await ensureIndexedCacheEntry(
     cacheKey,
@@ -406,8 +429,6 @@ export async function deleteCacheRecord(cacheKey: string): Promise<boolean> {
 export async function clearCacheRecords(): Promise<boolean> {
   await ensureCompatibleCacheSchema();
   await removeAllCacheEntries();
-  await chrome.storage.local.set({
-    [STORAGE_KEYS.cacheSchemaVersion]: CACHE_SCHEMA_VERSION,
-  });
+  await syncCacheSchemaVersion(CACHE_SCHEMA_VERSION);
   return true;
 }

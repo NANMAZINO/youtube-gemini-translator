@@ -206,7 +206,7 @@ export function createBackgroundService(
       const message =
         error instanceof Error ? error.message : String(error ?? 'Unknown error');
       console.warn(
-        `[YT AI Translator Rebuild] Cache ${label} write failed for ${videoId} (${taskId}): ${message}`,
+        `[YT AI Translator] Cache ${label} write failed for ${videoId} (${taskId}): ${message}`,
       );
       return false;
     }

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+  <body>
+    <ytd-watch-metadata>
+      <yt-button-shape>
+        <button
+          id="modern-transcript-button"
+          type="button"
+          aria-label="스크립트 표시"
+        >
+          스크립트 표시
+        </button>
+      </yt-button-shape>
+    </ytd-watch-metadata>
+
+    <ytd-engagement-panel-section-list-renderer
+      id="engagement-panel-searchable-transcript"
+      target-id="engagement-panel-searchable-transcript"
+      hidden
+      aria-hidden="true"
+    >
+      <ytd-transcript-search-panel-renderer>
+        <div id="body">
+          <transcript-segment-view-model id="modern-segment-1">
+            <yt-formatted-string id="start-time">0:05</yt-formatted-string>
+            <yt-formatted-string class="segment-text">
+              첫 번째 줄입니다.
+            </yt-formatted-string>
+          </transcript-segment-view-model>
+          <transcript-segment-view-model id="modern-segment-2">
+            <yt-formatted-string id="start-time">0:09</yt-formatted-string>
+            <yt-formatted-string class="segment-text">
+              두 번째 줄입니다.
+            </yt-formatted-string>
+          </transcript-segment-view-model>
+        </div>
+      </ytd-transcript-search-panel-renderer>
+    </ytd-engagement-panel-section-list-renderer>
+  </body>
+</html>

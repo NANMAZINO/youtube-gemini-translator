@@ -7,19 +7,20 @@
 - **Phase 3:** Done
 - **Phase 4:** Done
 - **Phase 5:** Done
-- **Phase 6:** In Progress
+- **Phase 6:** Done
+- **Post-cutover cleanup:** Done
 
 ## Fixed Decisions
 
 - Migration style: incremental transition
 - Source of truth for the rebuild: `src/`
-- Existing `extension/` tree remains a temporary regression reference until cleanup is complete
-- Default `npm run dev` and `npm run build` now target the rebuilt `src/` runtime; `npm run dev:rebuild` and `npm run build:rebuild` remain compatibility aliases during cleanup
+- Existing `extension/` tree remains an archived regression reference for behavior comparison
+- Default local workflow uses `npm run dev`, `npm run build`, and `npm run check`
 - Runtime boundary: browser-only Chrome MV3 extension
 - Primary optimization target: stability and maintainability
 - Provider scope: Gemini-optimized, not user-selectable multi-model
 - Compatibility target: preserve settings and import/export JSON; regenerate caches on schema mismatch
-- Minimum quality gate for each rebuild PR: `npm run typecheck && npm test && npm run build`
+- Minimum quality gate for each runtime PR: `npm run check`
 
 ## Baseline Features To Preserve
 
@@ -35,8 +36,6 @@
 
 ## Known Structural Debt To Remove
 
-- Duplicate responsibilities across `extension/content/*` and `extension/content/app|dom|flow|ui/*`
-- Legacy `extension/lib/*` stack overlapping with `extension/core/*` and `extension/infrastructure/*`
 - Untyped runtime message contracts between popup, content script, and background
 - Business rules mixed with DOM traversal and rendering concerns
 - No modern TypeScript build pipeline or typed manifest generation
@@ -50,8 +49,8 @@
 - [x] Create `docs/rebuild/progress.md`
 - [x] Add rebuild notice to root README
 - [x] Add rebuild notice to technical README
-- [ ] Capture old/new YouTube transcript DOM fixtures
-- [ ] Freeze regression checklist for transcript DOM changes
+- [x] Capture old/new YouTube transcript DOM fixtures
+- [x] Freeze regression checklist for transcript DOM changes
 
 ### Phase 2. Tooling and Type System
 
@@ -60,7 +59,7 @@
 - [x] Introduce typed manifest scaffold
 - [x] Define typed runtime command/event contracts
 - [x] Define shared core models (`Settings`, `TranscriptSegment`, `CacheRecord`, `UsageSummary`, `ExportBundle`)
-- [ ] Add CI-ready `rebuild:check` gate to workflow/automation
+- [x] Add CI-ready `npm run check` gate to workflow/automation
 
 ### Phase 3. Pure Domain Rebuild
 
@@ -88,12 +87,17 @@
 - [x] Centralize labels/icons/status text registry
 - [x] Support transcript panel mutations driven only by attribute changes
 
-### Phase 6. Cutover and Cleanup
+### Phase 6. Default Runtime Cutover
 
 - [x] Switch manifest to new implementation
-- [ ] Remove `extension/lib/*` and obsolete duplicate entrypoints
 - [x] Refresh README and technical docs for the new architecture
-- [ ] Mark cutover complete in progress log
+- [x] Mark cutover complete in progress log
+
+## Post-cutover Cleanup Backlog
+
+- [x] Remove `extension/lib/*` and other obsolete duplicate entrypoints
+- [x] Capture old/new YouTube transcript DOM fixtures
+- [x] Freeze regression checklist for transcript DOM changes
 
 ## Regression Checklist Targets
 

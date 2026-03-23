@@ -13,7 +13,7 @@ import {
 } from './presentation.ts';
 import {
   normalizeSettingsInput,
-  type RebuildPageMessage,
+  type RuntimePageMessage,
   type CacheMetadata,
   type Settings,
   type SettingsInput,
@@ -194,7 +194,7 @@ async function getApiKeyData(): Promise<string | null> {
 
 async function getSettingsData(): Promise<Settings> {
   const response = await sendCommand<'settings.get'>({
-    kind: 'rebuild.command',
+    kind: 'runtime.command',
     type: 'settings.get',
   });
 
@@ -207,7 +207,7 @@ async function getSettingsData(): Promise<Settings> {
 
 async function getUsageData(): Promise<UsageSummary> {
   const response = await sendCommand<'usage.get'>({
-    kind: 'rebuild.command',
+    kind: 'runtime.command',
     type: 'usage.get',
   });
 
@@ -220,7 +220,7 @@ async function getUsageData(): Promise<UsageSummary> {
 
 async function getCacheListData(): Promise<CacheMetadata[]> {
   const response = await sendCommand<'cache.list'>({
-    kind: 'rebuild.command',
+    kind: 'runtime.command',
     type: 'cache.list',
   });
 
@@ -372,7 +372,7 @@ async function handleClearApiKey() {
   }
 }
 
-async function notifyActiveYouTubeTab(message: RebuildPageMessage) {
+async function notifyActiveYouTubeTab(message: RuntimePageMessage) {
   const [activeTab] = await chrome.tabs.query({
     active: true,
     currentWindow: true,
@@ -389,7 +389,7 @@ async function notifyActiveYouTubeTab(message: RebuildPageMessage) {
   try {
     await chrome.tabs.sendMessage(activeTab.id, message);
   } catch {
-    // Ignore tabs where the rebuild content script is not active.
+    // Ignore tabs where the content runtime is not active.
   }
 }
 
@@ -404,7 +404,7 @@ async function handleSaveSettings() {
     });
 
     const response = await sendCommand<'settings.save'>({
-      kind: 'rebuild.command',
+      kind: 'runtime.command',
       type: 'settings.save',
       payload,
     });
@@ -434,7 +434,7 @@ async function handleDeleteCache(cacheKey: string) {
     }
 
     const response = await sendCommand<'cache.delete'>({
-      kind: 'rebuild.command',
+      kind: 'runtime.command',
       type: 'cache.delete',
       payload: { cacheKey },
     });
@@ -447,7 +447,7 @@ async function handleDeleteCache(cacheKey: string) {
     const cacheList = await getCacheListData();
     renderCacheList(cacheList);
     await notifyActiveYouTubeTab({
-      kind: 'rebuild.page',
+      kind: 'runtime.page',
       type: 'cache.delete',
       payload: { cacheKey },
     });
@@ -470,7 +470,7 @@ async function handleClearCache() {
     }
 
     const response = await sendCommand<'cache.clear'>({
-      kind: 'rebuild.command',
+      kind: 'runtime.command',
       type: 'cache.clear',
     });
 
@@ -482,7 +482,7 @@ async function handleClearCache() {
     renderCacheList([]);
     elements.cacheCount.textContent = '0';
     await notifyActiveYouTubeTab({
-      kind: 'rebuild.page',
+      kind: 'runtime.page',
       type: 'cache.clear',
     });
     setStatus('Cache cleared.', 'success');

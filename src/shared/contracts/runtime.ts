@@ -172,9 +172,9 @@ export type RuntimeEventType = keyof RuntimeEventMap;
 
 type BuildCommand<T extends RuntimeCommandType> =
   RuntimeCommandMap[T]['request'] extends undefined
-    ? { kind: 'rebuild.command'; type: T }
+    ? { kind: 'runtime.command'; type: T }
     : {
-        kind: 'rebuild.command';
+        kind: 'runtime.command';
         type: T;
         payload: RuntimeCommandMap[T]['request'];
       };
@@ -185,21 +185,21 @@ export type RuntimeCommand<T extends RuntimeCommandType = RuntimeCommandType> =
   }[T];
 
 export type RuntimeEvent<T extends RuntimeEventType = RuntimeEventType> = {
-  kind: 'rebuild.event';
+  kind: 'runtime.event';
   type: T;
   payload: RuntimeEventMap[T];
 };
 
 export interface CommandSuccess<T extends RuntimeCommandType> {
   ok: true;
-  kind: 'rebuild.command.result';
+  kind: 'runtime.command.result';
   type: T;
   data: RuntimeCommandMap[T]['response'];
 }
 
 export interface CommandFailure<T extends RuntimeCommandType = RuntimeCommandType> {
   ok: false;
-  kind: 'rebuild.command.result';
+  kind: 'runtime.command.result';
   type: T;
   error: {
     code: string;

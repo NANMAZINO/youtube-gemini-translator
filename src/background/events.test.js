@@ -26,7 +26,7 @@ test('emitRuntimeEvent forwards the explicit sender when using the options overl
   assert.equal(sent, true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].tabId, 17);
-  assert.equal(calls[0].event.kind, 'rebuild.event');
+  assert.equal(calls[0].event.kind, 'runtime.event');
   assert.equal(calls[0].event.type, 'translation.progress');
 });
 

@@ -1,7 +1,7 @@
 import type {
   CommandFailure,
   CommandSuccess,
-  RebuildPageMessage,
+  RuntimePageMessage,
   RuntimeCommand,
   RuntimeCommandMap,
   RuntimeCommandResult,
@@ -12,18 +12,18 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object';
 }
 
-export function isRebuildCommand(value: unknown): value is RuntimeCommand {
+export function isRuntimeCommand(value: unknown): value is RuntimeCommand {
   return (
     isObject(value) &&
-    value.kind === 'rebuild.command' &&
+    value.kind === 'runtime.command' &&
     typeof value.type === 'string'
   );
 }
 
-export function isRebuildPageMessage(value: unknown): value is RebuildPageMessage {
+export function isRuntimePageMessage(value: unknown): value is RuntimePageMessage {
   if (
     !isObject(value) ||
-    value.kind !== 'rebuild.page' ||
+    value.kind !== 'runtime.page' ||
     typeof value.type !== 'string'
   ) {
     return false;
@@ -46,7 +46,7 @@ export function createSuccess<T extends RuntimeCommandType>(
 ): CommandSuccess<T> {
   return {
     ok: true,
-    kind: 'rebuild.command.result',
+    kind: 'runtime.command.result',
     type,
     data,
   };
@@ -59,7 +59,7 @@ export function createFailure<T extends RuntimeCommandType>(
 ): CommandFailure<T> {
   return {
     ok: false,
-    kind: 'rebuild.command.result',
+    kind: 'runtime.command.result',
     type,
     error: {
       code,
@@ -75,7 +75,7 @@ export async function sendCommand<T extends RuntimeCommandType>(
 
   if (
     !isObject(response) ||
-    response.kind !== 'rebuild.command.result' ||
+    response.kind !== 'runtime.command.result' ||
     response.type !== command.type ||
     typeof response.ok !== 'boolean'
   ) {

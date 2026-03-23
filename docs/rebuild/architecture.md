@@ -1,4 +1,4 @@
-# Rebuild Architecture
+# Current Runtime Architecture
 
 ## Target Runtime Boundaries
 
@@ -37,9 +37,9 @@ src/
     └── contracts/
 ```
 
-The Vite build now packages the default extension artifact into `dist/`, and `npm run dev` / `npm run build` now target the rebuilt `src/` runtime by default. The retained `extension/` tree remains a temporary regression reference until the remaining Phase 6 cleanup removes obsolete legacy slices.
+The Vite build packages the default extension artifact into `dist/`, and `npm run dev` / `npm run build` now target the main `src/` runtime by default. The retained `extension/` tree is archived as a minimal legacy regression reference rather than a parallel runtime path.
 
-The current default runtime already routes settings, cache, usage, and typed translation start/resume/cancel plus refine task orchestration through `src/background`. The popup now reads and writes the API key through the shared storage adapter instead of the generic runtime bus, presents a user-facing management shell instead of rebuild-phase diagnostic copy, tolerates partial section load failures, keeps async popup actions explicitly disabled while they are running, and intentionally favors a low-density layout that surfaces only the controls and metrics needed for the primary setup/cache tasks. The rebuilt content script consumes typed runtime events into a typed panel/overlay surface, exposes YouTube-integrated open/translate/cancel controls through the rebuilt content path, and centralizes transcript button/panel detection, transcript opening, transcript extraction, and video context lookup in `src/adapters/youtube` so YouTube-specific DOM rules no longer live directly in the content entrypoint. The in-video subtitle overlay now intentionally follows the legacy visual baseline even though its behavior is owned by the rebuilt path, so the rebuild keeps the preferred familiar subtitle look while preserving rebuilt interaction support.
+The current default runtime already routes settings, cache, usage, and typed translation start/resume/cancel plus refine task orchestration through `src/background`. The popup reads and writes the API key through the shared storage adapter instead of the generic runtime bus, presents a user-facing management shell rather than migration-only diagnostic copy, tolerates partial section load failures, keeps async popup actions explicitly disabled while they are running, and intentionally favors a low-density layout that surfaces only the controls and metrics needed for the primary setup/cache tasks. The content script consumes typed runtime events into a typed panel and overlay surface, exposes YouTube-integrated open/translate/cancel controls through the main content path, and centralizes transcript button/panel detection, transcript opening, transcript extraction, and video context lookup in `src/adapters/youtube` so YouTube-specific DOM rules no longer live directly in the content entrypoint. The in-video subtitle overlay intentionally follows the legacy visual baseline even though its behavior is now owned by the typed path, preserving the familiar subtitle look while keeping the maintained implementation in one place.
 
 Within the current Phase 4 slice, malformed Gemini JSON now fails the task instead of being accepted as an empty success, and cache writes are treated as best-effort side effects rather than task-fatal steps.
 
@@ -89,9 +89,9 @@ Within the current Phase 4 slice, malformed Gemini JSON now fails the task inste
 - Existing cache key conventions remain the compatibility baseline:
   - index key `idx_translations`
   - data prefix `dat_`
-- Rebuild cache metadata exposes the stored cache key explicitly as `cacheKey` to avoid conflating it with the raw YouTube video id.
-- Rebuild-specific schema versioning is tracked separately so that the new implementation can evolve without corrupting current stable data.
-- Rebuild cache writes should preserve a human-readable title when one is available from the request or active tab, and they should never downgrade a successful translation/refine result into a failed task purely because storage rejected the write.
+- Runtime cache metadata exposes the stored cache key explicitly as `cacheKey` to avoid conflating it with the raw YouTube video id.
+- Schema version markers now use runtime-facing keys and migrate legacy rebuild-era keys forward on read or write so stored data stays compatible across the 3.0.0 cutover.
+- Runtime cache writes should preserve a human-readable title when one is available from the request or active tab, and they should never downgrade a successful translation/refine result into a failed task purely because storage rejected the write.
 
 ## Data Flow
 
@@ -110,7 +110,7 @@ Within the current Phase 4 slice, malformed Gemini JSON now fails the task inste
 4. Background emits typed progress events.
 5. Content renders state transitions into the panel and overlay.
 
-At the current checkpoint, steps 3 and 4 exist in the default rebuilt runtime for `translation.start`, `translation.resume`, `translation.cancel`, `refine.start`, and typed imported-bundle cache writes, while step 5 exists as a typed content-side surface driven by the runtime event stream, adapter-backed YouTube transcript capability scans, cached-translation rehydration, and in-page action controls plus refine/export/import header actions. The remaining gap is legacy cleanup and browser-side regression verification rather than the basic command/event contract, transcript discovery path, or content-side state model itself.
+At the current checkpoint, steps 3 and 4 exist in the default typed runtime for `translation.start`, `translation.resume`, `translation.cancel`, `refine.start`, and typed imported-bundle cache writes, while step 5 exists as a typed content-side surface driven by the runtime event stream, adapter-backed YouTube transcript capability scans, cached-translation rehydration, and in-page action controls plus refine/export/import header actions. The remaining operational work is browser-side regression verification rather than the basic command/event contract, transcript discovery path, or content-side state model itself.
 
 ## DOM Strategy Requirements
 

@@ -20,7 +20,7 @@ export function createRuntimeEvent<T extends RuntimeEventType>(
   payload: RuntimeEventMap[T],
 ): RuntimeEvent<T> {
   return {
-    kind: 'rebuild.event',
+    kind: 'runtime.event',
     type,
     payload,
   };
