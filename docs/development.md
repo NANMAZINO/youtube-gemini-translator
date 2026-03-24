@@ -51,6 +51,7 @@ DOM-sensitive changes include:
 - YouTube transcript DOM detection or extraction
 - Content surface actions or overlay behavior
 - Popup settings, cache actions, or API key flows
+- Popup hero controls for UI language or theme, including any live re-render behavior
 
 ## Browser Verification
 
@@ -60,6 +61,12 @@ DOM-sensitive changes include:
 | 2 | Click **Load unpacked** → select `dist/` folder |
 | 3 | Rebuild before reloading when source changes |
 | 4 | Follow the [Transcript Regression Checklist](transcript-regression-checklist.md) for DOM-sensitive work |
+
+When validating popup locale/theme work, manually check:
+
+- The hero row keeps the title, compact UI language selector, compact theme selector, and version badge aligned without adding a new card
+- Switching locale updates popup copy, content action labels, panel strings, and overlay tooltips without reloading YouTube
+- `Theme = System` follows OS theme in the popup and YouTube dark mode in the content UI
 
 > [!TIP]
 > After loading the extension, use Chrome DevTools → **Service Worker** inspector to debug background script issues.

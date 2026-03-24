@@ -246,7 +246,6 @@ export function createBackgroundService(
             videoId: request.videoId,
             completedChunks: startChunkIndex,
             totalChunks: chunks.length,
-            message: `Resumed from chunk ${startChunkIndex}/${chunks.length}.`,
           },
         });
       }

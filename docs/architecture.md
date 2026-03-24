@@ -121,7 +121,7 @@ All stored keys must remain backward-compatible across runtime versions.
 
 | Category | Keys | Notes |
 |---|---|---|
-| **Settings** | `targetLang`, `sourceLang`, `thinkingLevel`, `resumeMode` | Remain valid across versions |
+| **Settings** | `targetLang`, `sourceLang`, `thinkingLevel`, `resumeMode`, `uiLocale`, `themeMode` | Translation settings remain compatible; UI preferences default forward on read |
 | **Usage** | `tokenHistory` | Single aggregation key |
 | **API Key** | `apiKey` | Obfuscated, popup-local read/write |
 | **Cache Index** | `idx_translations` | Translation index key |
@@ -150,6 +150,8 @@ sequenceDiagram
 ```
 
 API key reads and writes bypass the command bus — they stay local to the popup through the shared storage adapter.
+
+Popup-local UI preference changes also persist through `settings.save`, then fan out to the content runtime through `chrome.storage.onChanged` so the YouTube panel and overlay can re-render without a page refresh.
 
 ### Translation / Refine
 
@@ -189,5 +191,5 @@ YouTube's transcript DOM is unstable across renderer updates. The adapter layer 
 |---|---|
 | **Information density** | Default to the lowest density that still supports the primary task |
 | **No speculative additions** | No helper copy, summary cards, or dashboard telemetry unless they unlock a concrete action |
-| **Popup layout** | Usage summary stays compact and scannable — stable 2×2 stats layout |
+| **Popup layout** | Usage summary stays compact and scannable — stable 2×2 stats layout; UI language + theme controls live in the hero row under the title, beside the version badge |
 | **Overlay style** | Keep the established visual baseline unless an intentional product decision replaces it |

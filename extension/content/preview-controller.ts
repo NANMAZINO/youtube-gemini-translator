@@ -9,14 +9,36 @@ import {
   getCurrentYouTubeVideoTitle,
 } from '../adapters/youtube/video-context.ts';
 import { sendCommand } from '../shared/messaging.ts';
-import { parseImportBundle } from './bundle-io.ts';
+import { ImportBundleError, parseImportBundle } from './bundle-io.ts';
 import { CONTENT_UI_LABELS } from './ui-labels.ts';
 import {
   isTerminalTaskStatus,
   type RuntimeTaskViewState,
 } from './runtime-event-consumer.ts';
+import type { ContentUiLabels } from '../shared/ui-copy.ts';
 
 export type PreviewSource = 'none' | 'cache' | 'import';
+type PreviewStatusMessageKey =
+  | 'messages.backgroundRefineTaskStarted'
+  | 'messages.backgroundTaskStarted'
+  | 'messages.cancellationRequested'
+  | 'messages.extractOriginalForRefine'
+  | 'messages.extractTranscriptFromPanel'
+  | 'messages.importedReadyAndCached'
+  | 'messages.importingJson'
+  | 'messages.noActiveTaskToCancel'
+  | 'messages.noDraftToRefine'
+  | 'messages.noOriginalForRefine'
+  | 'messages.noTranscriptExtracted'
+  | 'messages.requestingCancellation'
+  | 'messages.startResumeAwareTask'
+  | 'messages.startTranslationTask'
+  | 'messages.videoIdMissing'
+  | 'status.openingTranscript'
+  | 'status.startingRefine'
+  | 'status.startingTranslation'
+  | 'status.transcriptReady'
+  | 'surface.partialResumeAvailable';
 
 export interface PreviewControllerState {
   busy: boolean;
@@ -26,6 +48,7 @@ export interface PreviewControllerState {
   cancellingTask: boolean;
   activeTaskId: string | null;
   statusMessage: string | null;
+  statusMessageKey: PreviewStatusMessageKey | null;
   lastCommandType: RuntimeCommandType | null;
   previewTranslations: TranslationChunk[];
   previewSource: PreviewSource;
@@ -35,6 +58,17 @@ export interface PreviewControllerState {
 
 interface PreviewControllerOptions {
   onStateChanged?: (state: PreviewControllerState) => void;
+  getLabels?: () => ContentUiLabels;
+}
+
+class PreviewControllerError extends Error {
+  key: PreviewStatusMessageKey;
+
+  constructor(key: PreviewStatusMessageKey, message: string) {
+    super(message);
+    this.name = 'PreviewControllerError';
+    this.key = key;
+  }
 }
 
 function createInitialState(): PreviewControllerState {
@@ -46,18 +80,13 @@ function createInitialState(): PreviewControllerState {
     cancellingTask: false,
     activeTaskId: null,
     statusMessage: null,
+    statusMessageKey: null,
     lastCommandType: null,
     previewTranslations: [],
     previewSource: 'none',
     previewIsRefined: false,
     hasCachedRecord: false,
   };
-}
-
-function toErrorMessage(error: unknown) {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'The action could not be completed.';
 }
 
 function openKeepAlivePort() {
@@ -81,6 +110,69 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
   let keepAlivePort: chrome.runtime.Port | null = null;
   let hydratedCacheKey: string | null = null;
 
+  function getLabels() {
+    return options.getLabels?.() ?? CONTENT_UI_LABELS;
+  }
+
+  function localizeRuntimeErrorMessage(code: string, fallbackMessage: string) {
+    return getLabels().errors[code as keyof ReturnType<typeof getLabels>['errors']]
+      ?? fallbackMessage;
+  }
+
+  function resolveStatusMessageKey(key: PreviewStatusMessageKey) {
+    const labels = getLabels();
+    const [scope, field] = key.split('.') as [
+      'messages' | 'status' | 'surface',
+      string,
+    ];
+    const value = labels[scope][field as keyof (typeof labels)[typeof scope]];
+
+    return typeof value === 'string' ? value : '';
+  }
+
+  function publishStatusMessage(key: PreviewStatusMessageKey) {
+    return {
+      statusMessageKey: key,
+      statusMessage: resolveStatusMessageKey(key),
+    } as const;
+  }
+
+  function toErrorMessage(error: unknown) {
+    if (error instanceof PreviewControllerError) {
+      return {
+        statusMessageKey: error.key,
+        statusMessage: resolveStatusMessageKey(error.key),
+      } as const;
+    }
+
+    if (error instanceof ImportBundleError) {
+      return {
+        statusMessageKey: null,
+        statusMessage: localizeRuntimeErrorMessage(error.code, error.message),
+      } as const;
+    }
+
+    return {
+      statusMessageKey: null,
+      statusMessage:
+        error instanceof Error && error.message
+          ? error.message
+          : getLabels().messages.genericActionFailed,
+    } as const;
+  }
+
+  function toCommandErrorMessage(response: {
+    error: {
+      code: string;
+      message: string;
+    };
+  }) {
+    return localizeRuntimeErrorMessage(
+      response.error.code,
+      response.error.message,
+    );
+  }
+
   function publish(next: Partial<PreviewControllerState>) {
     state = {
       ...state,
@@ -97,6 +189,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     publish({
       ...createInitialState(),
       statusMessage,
+      statusMessageKey: null,
     });
   }
 
@@ -107,7 +200,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     });
 
     if (!response.ok) {
-      throw new Error(response.error.message);
+      throw new Error(toCommandErrorMessage(response));
     }
 
     return response.data;
@@ -127,17 +220,19 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     });
 
     if (!response.ok) {
-      throw new Error(response.error.message);
+      throw new Error(toCommandErrorMessage(response));
     }
 
     return response.data;
   }
 
   async function openTranscript() {
+    const labels = getLabels();
+
     publish({
       busy: true,
       openingTranscript: true,
-      statusMessage: CONTENT_UI_LABELS.status.openingTranscript,
+      ...publishStatusMessage('status.openingTranscript'),
     });
 
     try {
@@ -145,14 +240,15 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       publish({
         busy: false,
         openingTranscript: false,
-        statusMessage: CONTENT_UI_LABELS.status.transcriptReady,
+        ...publishStatusMessage('status.transcriptReady'),
       });
       await hydrateCachedPreview(true);
     } catch (error) {
+      const errorState = toErrorMessage(error);
       publish({
         busy: false,
         openingTranscript: false,
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
     }
   }
@@ -198,6 +294,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
           previewIsRefined: false,
           hasCachedRecord: false,
           statusMessage: null,
+          statusMessageKey: null,
         });
         return false;
       }
@@ -208,7 +305,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
           previewSource: 'none',
           previewIsRefined: false,
           hasCachedRecord: true,
-          statusMessage: CONTENT_UI_LABELS.surface.partialResumeAvailable,
+          ...publishStatusMessage('surface.partialResumeAvailable'),
         });
         return true;
       }
@@ -219,11 +316,13 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         previewIsRefined: cachedRecord.isRefined,
         hasCachedRecord: true,
         statusMessage: null,
+        statusMessageKey: null,
       });
       return true;
     } catch (error) {
+      const errorState = toErrorMessage(error);
       publish({
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
       return false;
     }
@@ -234,27 +333,34 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     let previewSource: PreviewSource = 'none';
     let previewIsRefined = false;
     let hasCachedRecord = state.hasCachedRecord;
+    const labels = getLabels();
 
     publish({
       busy: true,
       startingTranslation: true,
-      statusMessage: CONTENT_UI_LABELS.status.startingTranslation,
+      ...publishStatusMessage('status.startingTranslation'),
     });
 
     try {
       const videoId = getCurrentYouTubeVideoId();
       if (!videoId) {
-        throw new Error('Could not determine the current YouTube video id.');
+        throw new PreviewControllerError(
+          'messages.videoIdMissing',
+          labels.messages.videoIdMissing,
+        );
       }
 
       await openTranscriptPanel();
       publish({
-        statusMessage: 'Extracting transcript segments from the YouTube panel...',
+        ...publishStatusMessage('messages.extractTranscriptFromPanel'),
       });
 
       const transcript = await extractNormalizedTranscript();
       if (transcript.raw.length === 0 || transcript.grouped.length === 0) {
-        throw new Error('No transcript segments were extracted from the current page.');
+        throw new PreviewControllerError(
+          'messages.noTranscriptExtracted',
+          labels.messages.noTranscriptExtracted,
+        );
       }
 
       const settings = await loadSettings();
@@ -279,10 +385,9 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         previewSource,
         previewIsRefined,
         hasCachedRecord,
-        statusMessage:
-          commandType === 'translation.resume'
-            ? 'Starting a resume-aware translation task...'
-            : 'Starting a translation task...',
+        ...(commandType === 'translation.resume'
+          ? publishStatusMessage('messages.startResumeAwareTask')
+          : publishStatusMessage('messages.startTranslationTask')),
       });
 
       const response =
@@ -310,7 +415,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
             });
 
       if (!response.ok) {
-        throw new Error(response.error.message);
+        throw new Error(toCommandErrorMessage(response));
       }
 
       publish({
@@ -321,12 +426,12 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         previewSource,
         previewIsRefined,
         hasCachedRecord,
-        statusMessage:
-          'Background task started. Waiting for the first runtime event...',
+        ...publishStatusMessage('messages.backgroundTaskStarted'),
       });
     } catch (error) {
       closeKeepAlivePort(keepAlivePort);
       keepAlivePort = null;
+      const errorState = toErrorMessage(error);
       publish({
         busy: false,
         startingTranslation: false,
@@ -335,15 +440,17 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         previewSource,
         previewIsRefined,
         hasCachedRecord,
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
     }
   }
 
   async function startRefine(draftTranslations: TranslationChunk[]) {
+    const labels = getLabels();
+
     if (draftTranslations.length === 0) {
       publish({
-        statusMessage: 'There is no translated draft to refine yet.',
+        ...publishStatusMessage('messages.noDraftToRefine'),
       });
       return false;
     }
@@ -353,23 +460,29 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       startingRefine: true,
       lastCommandType: 'refine.start',
       previewTranslations: draftTranslations,
-      statusMessage: CONTENT_UI_LABELS.status.startingRefine,
+      ...publishStatusMessage('status.startingRefine'),
     });
 
     try {
       const videoId = getCurrentYouTubeVideoId();
       if (!videoId) {
-        throw new Error('Could not determine the current YouTube video id.');
+        throw new PreviewControllerError(
+          'messages.videoIdMissing',
+          labels.messages.videoIdMissing,
+        );
       }
 
       await openTranscriptPanel();
       publish({
-        statusMessage: 'Extracting original transcript segments for refine...',
+        ...publishStatusMessage('messages.extractOriginalForRefine'),
       });
 
       const transcript = await extractNormalizedTranscript();
       if (transcript.raw.length === 0) {
-        throw new Error('No original transcript segments were extracted for refine.');
+        throw new PreviewControllerError(
+          'messages.noOriginalForRefine',
+          labels.messages.noOriginalForRefine,
+        );
       }
 
       const settings = await loadSettings();
@@ -389,7 +502,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       });
 
       if (!response.ok) {
-        throw new Error(response.error.message);
+        throw new Error(toCommandErrorMessage(response));
       }
 
       publish({
@@ -397,28 +510,30 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         startingRefine: false,
         activeTaskId: response.data.task.taskId,
         previewTranslations: draftTranslations,
-        statusMessage:
-          'Background refine task started. Waiting for the first runtime event...',
+        ...publishStatusMessage('messages.backgroundRefineTaskStarted'),
       });
       return true;
     } catch (error) {
       closeKeepAlivePort(keepAlivePort);
       keepAlivePort = null;
+      const errorState = toErrorMessage(error);
       publish({
         busy: false,
         startingRefine: false,
         activeTaskId: null,
         previewTranslations: draftTranslations,
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
       return false;
     }
   }
 
   async function importBundleFile(file: File) {
+    const labels = getLabels();
+
     publish({
       busy: true,
-      statusMessage: 'Importing JSON subtitles into the translation surface...',
+      ...publishStatusMessage('messages.importingJson'),
     });
 
     try {
@@ -426,7 +541,10 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       const translations = parseImportBundle(jsonText);
       const videoId = getCurrentYouTubeVideoId();
       if (!videoId) {
-        throw new Error('Could not determine the current YouTube video id.');
+        throw new PreviewControllerError(
+          'messages.videoIdMissing',
+          labels.messages.videoIdMissing,
+        );
       }
 
       const settings = await loadSettings();
@@ -443,7 +561,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       });
 
       if (!response.ok) {
-        throw new Error(response.error.message);
+        throw new Error(toCommandErrorMessage(response));
       }
 
       hydratedCacheKey = `${videoId}_${settings.targetLang}_${settings.resumeMode}`;
@@ -453,23 +571,25 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         previewSource: 'import',
         previewIsRefined: false,
         hasCachedRecord: true,
-        statusMessage: 'Imported subtitles are ready and cached locally.',
+        ...publishStatusMessage('messages.importedReadyAndCached'),
       });
       return true;
     } catch (error) {
+      const errorState = toErrorMessage(error);
       publish({
         busy: false,
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
       return false;
     }
   }
 
   async function cancelActiveTask(task: RuntimeTaskViewState | null) {
+    const labels = getLabels();
     const taskId = task?.taskId ?? state.activeTaskId;
     if (!taskId) {
       publish({
-        statusMessage: 'There is no active task to cancel.',
+        ...publishStatusMessage('messages.noActiveTaskToCancel'),
       });
       return;
     }
@@ -477,7 +597,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     publish({
       busy: true,
       cancellingTask: true,
-      statusMessage: 'Requesting cancellation for the active task...',
+      ...publishStatusMessage('messages.requestingCancellation'),
     });
 
     try {
@@ -488,21 +608,21 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       });
 
       if (!response.ok) {
-        throw new Error(response.error.message);
+        throw new Error(toCommandErrorMessage(response));
       }
 
       publish({
         busy: false,
         cancellingTask: false,
         activeTaskId: taskId,
-        statusMessage:
-          'Cancellation requested. Waiting for runtime confirmation...',
+        ...publishStatusMessage('messages.cancellationRequested'),
       });
     } catch (error) {
+      const errorState = toErrorMessage(error);
       publish({
         busy: false,
         cancellingTask: false,
-        statusMessage: toErrorMessage(error),
+        ...errorState,
       });
     }
   }
@@ -528,6 +648,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
         cancellingTask: false,
         activeTaskId: null,
         statusMessage: null,
+        statusMessageKey: null,
       });
       return;
     }
@@ -540,7 +661,17 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
       cancellingTask: false,
       activeTaskId: task.taskId,
       statusMessage: null,
+      statusMessageKey: null,
     });
+  }
+
+  function refreshLocalizedStatusMessage(): boolean {
+    if (!state.statusMessageKey) {
+      return false;
+    }
+
+    publish(publishStatusMessage(state.statusMessageKey));
+    return true;
   }
 
   async function handleVideoNavigation() {
@@ -574,6 +705,7 @@ export function createPreviewController(options: PreviewControllerOptions = {}) 
     importBundleFile,
     cancelActiveTask,
     clearSurface,
+    refreshLocalizedStatusMessage,
     handleTaskUpdated,
     handleVideoNavigation,
   };

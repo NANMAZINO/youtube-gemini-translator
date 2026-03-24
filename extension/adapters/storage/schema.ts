@@ -5,6 +5,8 @@ export const STORAGE_KEYS = Object.freeze({
   sourceLang: 'sourceLang',
   thinkingLevel: 'thinkingLevel',
   resumeMode: 'resumeMode',
+  uiLocale: 'uiLocale',
+  themeMode: 'themeMode',
   settingsSchemaVersion: 'settingsSchemaVersion',
   cacheSchemaVersion: 'cacheSchemaVersion',
   cacheIndex: 'idx_translations',
@@ -17,6 +19,6 @@ export const LEGACY_STORAGE_KEYS = Object.freeze({
 });
 
 export const STORAGE_SCHEMA = Object.freeze({
-  settings: 1,
+  settings: 2,
   cache: 1,
 });

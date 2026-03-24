@@ -4,6 +4,11 @@ import type { TranscriptDomCapability } from '../adapters/youtube/transcript-dom
 import type { PreviewControllerState } from './preview-controller.ts';
 import type { RuntimeTaskViewState } from './runtime-event-consumer.ts';
 import { CONTENT_UI_LABELS } from './ui-labels.ts';
+import type { ContentUiLabels } from '../shared/ui-copy.ts';
+import {
+  formatTaskProgress as formatLocalizedTaskProgress,
+  getTaskDetailText,
+} from './task-copy.ts';
 
 export type SurfaceTone = 'neutral' | 'info' | 'warning' | 'success' | 'error';
 
@@ -30,37 +35,35 @@ interface ProjectSurfaceStateInput {
   task: RuntimeTaskViewState | null;
 }
 
-function formatTaskProgress(task: RuntimeTaskViewState | null) {
+function formatTaskProgress(
+  task: RuntimeTaskViewState | null,
+  labels: ContentUiLabels,
+) {
   if (!task) {
     return '';
   }
 
-  if (task.totalChunks !== null) {
-    return `${task.completedChunks ?? 0}/${task.totalChunks}`;
-  }
-
-  if (task.translationsCount !== null) {
-    return `${task.translationsCount} segments`;
-  }
-
-  return '';
+  return formatLocalizedTaskProgress(task, labels);
 }
 
-function toControllerStatusMessage(controllerState: PreviewControllerState | null) {
+function toControllerStatusMessage(
+  controllerState: PreviewControllerState | null,
+  labels: ContentUiLabels,
+) {
   if (!controllerState?.statusMessage) {
     return null;
   }
 
   if (controllerState.openingTranscript) {
-    return CONTENT_UI_LABELS.status.openingTranscript;
+    return labels.status.openingTranscript;
   }
 
   if (controllerState.startingTranslation) {
-    return CONTENT_UI_LABELS.status.startingTranslation;
+    return labels.status.startingTranslation;
   }
 
   if (controllerState.startingRefine) {
-    return CONTENT_UI_LABELS.status.startingRefine;
+    return labels.status.startingRefine;
   }
 
   return controllerState.statusMessage;
@@ -71,6 +74,7 @@ function createSurfaceControls(
   task: RuntimeTaskViewState | null,
   translations: TranslationChunk[],
   isRefinedResult: boolean,
+  labels: ContentUiLabels,
 ) {
   const activeTask =
     !!task &&
@@ -88,17 +92,17 @@ function createSurfaceControls(
     importEnabled,
     importTitle:
       hasVisibleTranslations
-        ? 'Import becomes available again when the current translation is no longer on screen.'
+        ? labels.messages.importLockedVisible
         : hasCachedRecord
-          ? 'Import a JSON subtitle bundle. Any hidden saved draft for this video will be replaced.'
-          : 'Import a JSON subtitle bundle into the translation surface.',
+          ? labels.messages.importWillReplaceHiddenDraft
+          : labels.messages.importIntoSurface,
     showRefineAction,
     refineEnabled: showRefineAction && !activeTask && !busy && !isRefinedResult,
     refineLabel: isRefinedResult
-      ? CONTENT_UI_LABELS.controls.refined
+      ? labels.controls.refined
       : busy && controllerState?.startingRefine
-        ? CONTENT_UI_LABELS.controls.startingRefine
-        : CONTENT_UI_LABELS.controls.refine,
+        ? labels.controls.startingRefine
+        : labels.controls.refine,
   };
 }
 
@@ -115,6 +119,7 @@ function createSurfaceState(
   controllerState: PreviewControllerState | null,
   task: RuntimeTaskViewState | null,
   isRefinedResult: boolean,
+  labels: ContentUiLabels,
 ) {
   return {
     ...base,
@@ -123,6 +128,7 @@ function createSurfaceState(
       task,
       base.translations,
       isRefinedResult,
+      labels,
     ),
   } satisfies TranslationSurfaceState;
 }
@@ -147,12 +153,13 @@ export function findActiveTranslationIndex(
 
 export function projectTranslationSurfaceState(
   input: ProjectSurfaceStateInput,
+  labels: ContentUiLabels = CONTENT_UI_LABELS,
 ): TranslationSurfaceState {
   const capability = input.capability;
   const controllerState = input.controllerState;
   const task = input.task;
   const panelVisible = !!capability?.panelOpen;
-  const controllerMessage = toControllerStatusMessage(controllerState);
+  const controllerMessage = toControllerStatusMessage(controllerState, labels);
   const previewTranslations = controllerState?.previewTranslations ?? [];
   const previewSource = controllerState?.previewSource ?? 'none';
   const previewIsRefined = controllerState?.previewIsRefined ?? false;
@@ -172,13 +179,13 @@ export function projectTranslationSurfaceState(
       overlayVisible: false,
       tone: controllerState.startingRefine ? 'warning' : 'info',
       statusText: controllerState.startingRefine
-        ? CONTENT_UI_LABELS.status.startingRefine
-        : CONTENT_UI_LABELS.status.startingTranslation,
+        ? labels.status.startingRefine
+        : labels.status.startingTranslation,
       progressText: '',
       detailText: controllerMessage ?? '',
-      emptyText: CONTENT_UI_LABELS.surface.empty,
+      emptyText: labels.surface.empty,
       translations: preparingTranslations,
-    }, controllerState, null, preparingIsRefined);
+    }, controllerState, null, preparingIsRefined, labels);
   }
 
   if (task) {
@@ -191,24 +198,24 @@ export function projectTranslationSurfaceState(
           panelVisible,
           overlayVisible: false,
           tone: 'info',
-          statusText: CONTENT_UI_LABELS.status.running,
-          progressText: formatTaskProgress(task),
-          detailText: task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+          statusText: labels.status.running,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'retrying':
         return createSurfaceState({
           panelVisible,
           overlayVisible: false,
           tone: 'warning',
-          statusText: CONTENT_UI_LABELS.status.retrying,
-          progressText: formatTaskProgress(task),
-          detailText: task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+          statusText: labels.status.retrying,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'completed':
         return createSurfaceState({
@@ -216,38 +223,37 @@ export function projectTranslationSurfaceState(
           overlayVisible: translations.length > 0,
           tone: 'success',
           statusText: taskIsRefinedResult
-            ? CONTENT_UI_LABELS.surface.refinedReady
-            : CONTENT_UI_LABELS.status.completed,
-          progressText: formatTaskProgress(task),
-          detailText:
-            task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+            ? labels.surface.refinedReady
+            : labels.status.completed,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'failed':
         return createSurfaceState({
           panelVisible,
           overlayVisible: false,
           tone: 'error',
-          statusText: CONTENT_UI_LABELS.status.failed,
-          progressText: formatTaskProgress(task),
-          detailText: task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+          statusText: labels.status.failed,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'cancelled':
         return createSurfaceState({
           panelVisible,
           overlayVisible: false,
           tone: 'neutral',
-          statusText: CONTENT_UI_LABELS.status.cancelled,
-          progressText: formatTaskProgress(task),
-          detailText: task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+          statusText: labels.status.cancelled,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'preparing':
         return createSurfaceState({
@@ -255,13 +261,13 @@ export function projectTranslationSurfaceState(
           overlayVisible: false,
           tone: controllerState?.startingRefine ? 'warning' : 'info',
           statusText: controllerState?.startingRefine
-            ? CONTENT_UI_LABELS.status.startingRefine
-            : CONTENT_UI_LABELS.status.startingTranslation,
-          progressText: formatTaskProgress(task),
-          detailText: task.message ?? '',
-          emptyText: CONTENT_UI_LABELS.surface.empty,
+            ? labels.status.startingRefine
+            : labels.status.startingTranslation,
+          progressText: formatTaskProgress(task, labels),
+          detailText: getTaskDetailText(task, labels),
+          emptyText: labels.surface.empty,
           translations,
-        }, controllerState, task, taskIsRefinedResult);
+        }, controllerState, task, taskIsRefinedResult, labels);
 
       case 'idle':
         break;
@@ -271,21 +277,21 @@ export function projectTranslationSurfaceState(
   if (panelVisible && previewTranslations.length > 0) {
     const statusText =
       previewSource === 'import'
-        ? CONTENT_UI_LABELS.surface.importedReady
+        ? labels.surface.importedReady
         : previewIsRefined
-          ? CONTENT_UI_LABELS.surface.refinedReady
-          : CONTENT_UI_LABELS.surface.cachedReady;
+          ? labels.surface.refinedReady
+          : labels.surface.cachedReady;
 
     return createSurfaceState({
       panelVisible,
       overlayVisible: true,
       tone: previewIsRefined ? 'success' : previewSource === 'import' ? 'info' : 'neutral',
       statusText,
-      progressText: `${previewTranslations.length} segments`,
+      progressText: labels.messages.translatedSegments(previewTranslations.length),
       detailText: controllerMessage ?? '',
-      emptyText: CONTENT_UI_LABELS.surface.empty,
+      emptyText: labels.surface.empty,
       translations: previewTranslations,
-    }, controllerState, task, previewIsRefined);
+    }, controllerState, task, previewIsRefined, labels);
   }
 
   if (controllerMessage) {
@@ -296,9 +302,9 @@ export function projectTranslationSurfaceState(
       statusText: controllerMessage,
       progressText: '',
       detailText: '',
-      emptyText: CONTENT_UI_LABELS.surface.empty,
+      emptyText: labels.surface.empty,
       translations: [],
-    }, controllerState, task, false);
+    }, controllerState, task, false, labels);
   }
 
   if (panelVisible) {
@@ -306,22 +312,22 @@ export function projectTranslationSurfaceState(
       panelVisible,
       overlayVisible: false,
       tone: 'neutral',
-      statusText: CONTENT_UI_LABELS.surface.ready,
-      progressText: 'Ready',
+      statusText: labels.surface.ready,
+      progressText: labels.status.transcriptReady,
       detailText: '',
-      emptyText: CONTENT_UI_LABELS.surface.empty,
+      emptyText: labels.surface.empty,
       translations: [],
-    }, controllerState, task, false);
+    }, controllerState, task, false, labels);
   }
 
   return createSurfaceState({
     panelVisible: false,
     overlayVisible: false,
     tone: 'neutral',
-    statusText: CONTENT_UI_LABELS.status.idle,
+    statusText: labels.status.idle,
     progressText: '',
-    detailText: CONTENT_UI_LABELS.surface.waiting,
-    emptyText: CONTENT_UI_LABELS.surface.empty,
+    detailText: labels.surface.waiting,
+    emptyText: labels.surface.empty,
     translations: [],
-  }, controllerState, task, false);
+  }, controllerState, task, false, labels);
 }

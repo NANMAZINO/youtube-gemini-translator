@@ -86,6 +86,8 @@ test('getSettings normalizes invalid legacy storage values', async () => {
     targetLang: '한국어',
     thinkingLevel: 'minimal',
     resumeMode: true,
+    uiLocale: 'auto',
+    themeMode: 'system',
     schemaVersion: 7,
   });
 
@@ -104,6 +106,8 @@ test('saveSettings normalizes unsupported values before persisting', async () =>
     targetLang: 'Deutsch',
     thinkingLevel: 'turbo',
     resumeMode: false,
+    uiLocale: 'pirate',
+    themeMode: 'sepia',
   });
 
   assert.deepEqual(settings, {
@@ -111,7 +115,9 @@ test('saveSettings normalizes unsupported values before persisting', async () =>
     targetLang: '한국어',
     thinkingLevel: 'minimal',
     resumeMode: false,
-    schemaVersion: 1,
+    uiLocale: 'auto',
+    themeMode: 'system',
+    schemaVersion: 2,
   });
 
   const snapshot = storageMock.snapshot();
@@ -119,6 +125,8 @@ test('saveSettings normalizes unsupported values before persisting', async () =>
   assert.equal(snapshot[STORAGE_KEYS.targetLang], '한국어');
   assert.equal(snapshot[STORAGE_KEYS.thinkingLevel], 'minimal');
   assert.equal(snapshot[STORAGE_KEYS.resumeMode], false);
-  assert.equal(snapshot[STORAGE_KEYS.settingsSchemaVersion], 1);
+  assert.equal(snapshot[STORAGE_KEYS.uiLocale], 'auto');
+  assert.equal(snapshot[STORAGE_KEYS.themeMode], 'system');
+  assert.equal(snapshot[STORAGE_KEYS.settingsSchemaVersion], 2);
   assert.equal(snapshot[LEGACY_STORAGE_KEYS.settingsSchemaVersion], undefined);
 });

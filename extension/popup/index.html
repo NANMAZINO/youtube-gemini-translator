@@ -9,34 +9,45 @@
   <body>
     <main class="shell" id="shell">
       <section class="hero">
-        <div class="hero-copy">
+        <div class="hero-top-row">
           <div class="hero-title-row">
-            <h1>YouTube AI Translator</h1>
-            <span
+            <h1 id="appTitle"></h1>
+            <button
+              id="heroInfoBadge"
               class="info-badge"
-              title="Unofficial tool. Not affiliated with YouTube or Google."
-              aria-label="Unofficial tool. Not affiliated with YouTube or Google."
+              type="button"
             >
               i
-            </span>
+            </button>
+            <span class="version" id="version"></span>
           </div>
         </div>
-        <span class="version" id="version"></span>
+        <div class="hero-toolbar">
+          <div class="hero-preferences">
+            <label class="hero-control" for="uiLocale">
+              <span id="uiLocaleLabel"></span>
+              <select id="uiLocale"></select>
+            </label>
+            <label class="hero-control" for="themeMode">
+              <span id="themeModeLabel"></span>
+              <select id="themeMode"></select>
+            </label>
+          </div>
+        </div>
       </section>
 
       <section class="card">
         <div class="card-header">
-          <h2>Gemini API Key</h2>
+          <h2 id="apiKeyTitle"></h2>
         </div>
         <div class="settings-grid">
           <label>
-            <span>API key</span>
+            <span id="apiKeyLabel"></span>
             <div class="input-row">
               <input
                 id="apiKey"
                 class="input"
                 type="password"
-                placeholder="Enter your API key"
                 autocomplete="off"
                 spellcheck="false"
               />
@@ -46,102 +57,104 @@
                 type="button"
                 aria-controls="apiKey"
                 aria-pressed="false"
-                aria-label="Show API key"
               >
-                Show
               </button>
             </div>
           </label>
           <div class="button-row">
-            <button id="saveApiKey" type="button" class="primary">Save key</button>
-            <button id="clearApiKey" type="button" class="secondary">Clear</button>
+            <button id="saveApiKey" type="button" class="primary"></button>
+            <button id="clearApiKey" type="button" class="secondary"></button>
           </div>
-          <p class="hint">
-            Create a key in
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
-          </p>
+          <p class="hint" id="apiKeyHint"></p>
         </div>
       </section>
 
       <section class="card">
         <div class="card-header">
-          <h2>Settings</h2>
+          <h2 id="settingsTitle"></h2>
         </div>
         <form id="settingsForm" class="settings-grid">
           <label>
-            <span>Source language</span>
-            <select id="sourceLang">
-              <option value="Auto">Auto</option>
-              <option value="한국어">한국어</option>
-              <option value="English">English</option>
-              <option value="日本語">日本語</option>
-            </select>
+            <span id="sourceLangLabel"></span>
+            <select id="sourceLang"></select>
           </label>
           <label>
-            <span>Target language</span>
-            <select id="targetLang">
-              <option value="한국어">한국어</option>
-              <option value="English">English</option>
-              <option value="日本語">日本語</option>
-            </select>
+            <span id="targetLangLabel"></span>
+            <select id="targetLang"></select>
           </label>
           <label>
-            <span>Thinking Level</span>
-            <select id="thinkingLevel">
-              <option value="minimal">Minimal</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+            <span class="label-with-badge">
+              <span id="thinkingLevelLabel"></span>
+              <button
+                id="thinkingLevelInfoBadge"
+                class="info-badge info-badge-sm"
+                type="button"
+              >
+                i
+              </button>
+            </span>
+            <select id="thinkingLevel"></select>
           </label>
           <label class="toggle">
-            <span>Resume unfinished runs</span>
+            <span class="label-with-badge">
+              <span id="resumeModeLabel"></span>
+              <button
+                id="resumeModeInfoBadge"
+                class="info-badge info-badge-sm"
+                type="button"
+              >
+                i
+              </button>
+            </span>
             <input id="resumeMode" type="checkbox" />
           </label>
-          <button type="submit" class="primary">Save settings</button>
+          <button type="submit" id="saveSettings" class="primary"></button>
         </form>
       </section>
 
       <section class="stats-grid">
         <article class="stat-card">
-          <span class="stat-label">Today</span>
+          <span class="stat-label" id="todayLabel"></span>
           <strong id="todayTokens">0</strong>
         </article>
         <article class="stat-card">
-          <span class="stat-label">30 Days</span>
+          <span class="stat-label" id="monthlyLabel"></span>
           <strong id="monthlyTokens">0</strong>
         </article>
         <article class="stat-card">
           <div class="stat-label-row">
-            <span class="stat-label">Cost</span>
-            <span
+            <span class="stat-label" id="costLabel"></span>
+            <button
+              id="costInfoBadge"
               class="info-badge info-badge-sm"
-              title="Estimated cost only. Actual billed amount may differ based on Gemini pricing, rounding, and provider-side accounting."
-              aria-label="Estimated cost only. Actual billed amount may differ based on Gemini pricing, rounding, and provider-side accounting."
+              type="button"
             >
               i
-            </span>
+            </button>
           </div>
           <strong id="estimatedCost">$0.000</strong>
         </article>
         <article class="stat-card">
-          <span class="stat-label">Cache</span>
+          <span class="stat-label" id="cacheLabel"></span>
           <strong id="cacheCount">0</strong>
         </article>
       </section>
 
       <section class="card">
         <div class="card-header">
-          <h2>Cache</h2>
+          <h2 id="cacheTitle"></h2>
         </div>
         <div class="button-row">
-          <button id="clearCache" type="button" class="secondary">Clear cache</button>
+          <button id="clearCache" type="button" class="secondary"></button>
         </div>
-        <p id="cacheSummary" class="hint">No saved subtitle bundles yet.</p>
+        <p id="cacheSummary" class="hint"></p>
         <ul id="cacheList" class="cache-list"></ul>
       </section>
 
       <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div id="infoPopover" class="info-popover" hidden role="dialog" aria-live="polite">
+        <p id="infoPopoverText"></p>
+      </div>
     </main>
     <script type="module" src="./index.ts"></script>
   </body>

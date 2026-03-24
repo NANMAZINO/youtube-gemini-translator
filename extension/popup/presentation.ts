@@ -1,66 +1,77 @@
 import type { CacheMetadata } from '../shared/contracts/index.ts';
+import type { UiCopy } from '../shared/ui-copy.ts';
 
-export function getApiKeyToggleState(isVisible: boolean) {
+export function getApiKeyToggleState(
+  isVisible: boolean,
+  copy: UiCopy['popup'],
+) {
   return {
-    text: isVisible ? 'Hide' : 'Show',
-    ariaLabel: isVisible ? 'Hide API key' : 'Show API key',
+    text: isVisible ? copy.hide : copy.show,
+    ariaLabel: isVisible ? copy.hideApiKey : copy.showApiKey,
     ariaPressed: isVisible ? 'true' : 'false',
   } as const;
 }
 
-function formatList(items: string[]) {
-  if (items.length <= 1) {
-    return items[0] ?? '';
-  }
-
-  if (items.length === 2) {
-    return `${items[0]} and ${items[1]}`;
-  }
-
-  return `${items.slice(0, -1).join(', ')}, and ${items.at(-1)}`;
-}
-
-export function summarizeRefreshFailures(failedSections: string[]) {
+export function summarizeRefreshFailures(
+  failedSections: string[],
+  copy: UiCopy['popup'],
+) {
   if (failedSections.length === 0) {
     return {
-      message: 'Everything is ready.',
+      message: copy.readySummary,
       type: 'success',
     } as const;
   }
 
   return {
-    message: `Loaded available data, but ${formatList(failedSections)} could not be refreshed.`,
+    message: copy.partialRefreshSummary(failedSections),
     type: 'error',
   } as const;
 }
 
-export function summarizeCacheList(totalCount: number, visibleCount: number) {
+export function summarizeCacheList(
+  totalCount: number,
+  visibleCount: number,
+  copy: UiCopy['popup'],
+) {
   if (totalCount === 0) {
-    return 'No saved subtitle bundles yet.';
+    return copy.cacheEmpty;
   }
 
   if (visibleCount < totalCount) {
-    return `Showing ${visibleCount} of ${totalCount} saved subtitle bundles.`;
+    return copy.cacheCountPartial(visibleCount, totalCount);
   }
 
-  return `${totalCount} saved subtitle bundle${totalCount === 1 ? '' : 's'}.`;
+  return copy.cacheCount(totalCount);
 }
 
-export function describeCacheEntry(item: CacheMetadata, locale?: string) {
+export function describeCacheEntry(
+  item: CacheMetadata,
+  copy: UiCopy,
+  locale?: string,
+) {
   const formatter = new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
   });
   const stateLabel = item.isPartial
-    ? 'Resume available'
+    ? copy.popup.cacheStateResume
     : item.isRefined
-      ? 'Refined'
-      : 'Ready';
-  const title = item.title.trim() || 'this video';
+      ? copy.popup.cacheStateRefined
+      : copy.popup.cacheStateReady;
+  const title = item.title.trim() || copy.popup.fallbackVideoTitle;
+  const sourceLabel =
+    copy.common.sourceLanguageOptions[
+      item.sourceLang as keyof typeof copy.common.sourceLanguageOptions
+    ] ?? item.sourceLang;
+  const targetLabel =
+    copy.common.targetLanguageOptions[
+      item.targetLang as keyof typeof copy.common.targetLanguageOptions
+    ] ?? item.targetLang;
 
   return {
     stateLabel,
-    languageLabel: `${item.sourceLang} -> ${item.targetLang}`,
-    savedLabel: `Saved ${formatter.format(new Date(item.timestamp))}`,
-    deleteLabel: `Delete cached translation for ${title}`,
+    languageLabel: `${sourceLabel} -> ${targetLabel}`,
+    savedLabel: copy.popup.savedOn(formatter.format(new Date(item.timestamp))),
+    deleteLabel: copy.popup.deleteCachedTranslationFor(title),
   } as const;
 }

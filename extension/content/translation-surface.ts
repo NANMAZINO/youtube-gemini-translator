@@ -1,4 +1,7 @@
-import type { TranslationChunk } from '../shared/contracts/index.ts';
+import type {
+  ResolvedTheme,
+  TranslationChunk,
+} from '../shared/contracts/index.ts';
 import {
   findTranscriptContainer,
   findTranscriptPanel,
@@ -8,6 +11,7 @@ import {
   findActiveTranslationIndex,
   type TranslationSurfaceState,
 } from './surface-state.ts';
+import type { ContentUiLabels } from '../shared/ui-copy.ts';
 
 const SURFACE_HOST_ID = 'yt-ai-translation-surface-host';
 const OVERLAY_HOST_ID = 'yt-ai-translation-overlay-host';
@@ -20,7 +24,10 @@ interface SurfaceElements {
   exportButton: HTMLButtonElement;
   importButton: HTMLButtonElement;
   refineButton: HTMLButtonElement;
+  toggleButton: HTMLButtonElement;
   fileInput: HTMLInputElement;
+  progressPanel: HTMLElement;
+  listFrame: HTMLElement;
   progressValue: HTMLParagraphElement;
   detailValue: HTMLParagraphElement;
   emptyValue: HTMLParagraphElement;
@@ -36,6 +43,8 @@ interface TranslationSurfaceOptions {
   onExport: (translations: TranslationChunk[]) => void;
   onImportFile: (file: File) => void | Promise<void>;
   onStartRefine: () => void;
+  getLabels: () => ContentUiLabels;
+  getResolvedTheme: () => ResolvedTheme;
 }
 
 function parseSeconds(timestamp: string) {
@@ -57,6 +66,22 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
         bottomPx: number;
       }
     | null = null;
+
+  function applyTheme(host: HTMLDivElement) {
+    host.dataset.theme = options.getResolvedTheme();
+  }
+
+  function applyPanelCopy(panel: SurfaceElements) {
+    const labels = options.getLabels();
+
+    panel.exportButton.textContent = labels.surface.export;
+    panel.importButton.textContent = labels.surface.import;
+    panel.toggleButton.setAttribute('aria-label', labels.messages.toggleTranscript);
+    panel.toggleButton.title = labels.messages.toggleTranscript;
+    panel.progressPanel.setAttribute('aria-label', labels.messages.translationStatusAria);
+    panel.listFrame.setAttribute('aria-label', labels.messages.translatedTranscriptMapAria);
+    panel.list.setAttribute('aria-label', labels.messages.translatedTranscriptListAria);
+  }
 
   function stopOverlaySync() {
     syncedAbortController?.abort();
@@ -111,25 +136,23 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
             font-family: 'Roboto', 'Arial', sans-serif;
           }
 
-          @media (prefers-color-scheme: dark) {
-            :host {
-              --s-bg: rgba(30, 30, 30, 0.7);
-              --s-border: rgba(255, 255, 255, 0.1);
-              --s-header-bg: rgba(40, 40, 40, 0.5);
-              --s-header-border: rgba(255, 255, 255, 0.06);
-              --s-text: #f1f1f1;
-              --s-text-secondary: #aaa;
-              --s-text-muted: #717171;
-              --s-accent: #3ea6ff;
-              --s-accent-hover: rgba(62, 166, 255, 0.1);
-              --s-accent-active: rgba(62, 166, 255, 0.15);
-              --s-success: #81c995;
-              --s-warning: #ffa726;
-              --s-error: #f28b82;
-              --s-btn-bg: rgba(255, 255, 255, 0.1);
-              --s-btn-hover: rgba(255, 255, 255, 0.15);
-              --s-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            }
+          :host([data-theme="dark"]) {
+            --s-bg: rgba(30, 30, 30, 0.7);
+            --s-border: rgba(255, 255, 255, 0.1);
+            --s-header-bg: rgba(40, 40, 40, 0.5);
+            --s-header-border: rgba(255, 255, 255, 0.06);
+            --s-text: #f1f1f1;
+            --s-text-secondary: #aaa;
+            --s-text-muted: #717171;
+            --s-accent: #3ea6ff;
+            --s-accent-hover: rgba(62, 166, 255, 0.1);
+            --s-accent-active: rgba(62, 166, 255, 0.15);
+            --s-success: #81c995;
+            --s-warning: #ffa726;
+            --s-error: #f28b82;
+            --s-btn-bg: rgba(255, 255, 255, 0.1);
+            --s-btn-hover: rgba(255, 255, 255, 0.15);
+            --s-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
           }
 
           * { box-sizing: border-box; }
@@ -403,19 +426,19 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
             <button class="control-btn control-btn-accent" type="button" data-role="translate"></button>
             <button class="control-btn control-btn-secondary" type="button" data-role="cancel" hidden></button>
             <button class="control-btn control-btn-outline" type="button" data-role="refine"></button>
-            <button class="control-btn control-btn-outline" type="button" data-role="export">${CONTENT_UI_LABELS.surface.export}</button>
-            <button class="control-btn control-btn-outline" type="button" data-role="import" title="Import a JSON subtitle bundle.">${CONTENT_UI_LABELS.surface.import}</button>
+            <button class="control-btn control-btn-outline" type="button" data-role="export"></button>
+            <button class="control-btn control-btn-outline" type="button" data-role="import"></button>
             <input data-role="file-input" type="file" accept=".json" hidden />
-            <button class="toggle-btn" type="button" data-role="toggle" aria-expanded="true" aria-label="Toggle transcript" title="Toggle transcript">▼</button>
+            <button class="toggle-btn" type="button" data-role="toggle" aria-expanded="true">▼</button>
           </div>
           <div class="content-body" data-role="content-body">
-            <section class="progress-panel" aria-label="Translation status">
+            <section class="progress-panel" data-role="progress-panel">
               <p class="meta" data-role="progress"></p>
               <p class="detail" data-role="detail" role="status" aria-live="polite"></p>
             </section>
             <p class="empty" data-role="empty"></p>
-            <section class="list-frame" aria-label="Translated transcript map">
-              <div class="list" data-role="list" role="list" aria-label="Translated transcript"></div>
+            <section class="list-frame" data-role="list-frame">
+              <div class="list" data-role="list" role="list"></div>
             </section>
           </div>
         </section>
@@ -439,12 +462,17 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
       parent.prepend(host);
     }
 
+    applyTheme(host);
+
     const translateButton = shadow.querySelector('[data-role="translate"]');
     const cancelButton = shadow.querySelector('[data-role="cancel"]');
     const exportButton = shadow.querySelector('[data-role="export"]');
     const importButton = shadow.querySelector('[data-role="import"]');
     const refineButton = shadow.querySelector('[data-role="refine"]');
+    const toggleButton = shadow.querySelector('[data-role="toggle"]');
     const fileInput = shadow.querySelector('[data-role="file-input"]');
+    const progressPanel = shadow.querySelector('[data-role="progress-panel"]');
+    const listFrame = shadow.querySelector('[data-role="list-frame"]');
     const progressValue = shadow.querySelector('[data-role="progress"]');
     const detailValue = shadow.querySelector('[data-role="detail"]');
     const emptyValue = shadow.querySelector('[data-role="empty"]');
@@ -456,7 +484,10 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
       !(exportButton instanceof HTMLButtonElement) ||
       !(importButton instanceof HTMLButtonElement) ||
       !(refineButton instanceof HTMLButtonElement) ||
+      !(toggleButton instanceof HTMLButtonElement) ||
       !(fileInput instanceof HTMLInputElement) ||
+      !(progressPanel instanceof HTMLElement) ||
+      !(listFrame instanceof HTMLElement) ||
       !(progressValue instanceof HTMLParagraphElement) ||
       !(detailValue instanceof HTMLParagraphElement) ||
       !(emptyValue instanceof HTMLParagraphElement) ||
@@ -465,19 +496,25 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
       throw new Error('Failed to initialize the translation surface.');
     }
 
-    return {
+    const panel = {
       host,
       translateButton,
       cancelButton,
       exportButton,
       importButton,
       refineButton,
+      toggleButton,
       fileInput,
+      progressPanel,
+      listFrame,
       progressValue,
       detailValue,
       emptyValue,
       list,
     };
+
+    applyPanelCopy(panel);
+    return panel;
   }
 
   function ensureOverlayElements(): OverlayElements | null {
@@ -511,6 +548,24 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
             all: initial;
           }
 
+          :host([data-theme="dark"]) .overlay {
+            background: rgba(0, 0, 0, 0.55);
+            border-color: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.98);
+            text-shadow:
+              0 1px 4px rgba(0, 0, 0, 0.6),
+              0 0 12px rgba(0, 0, 0, 0.3);
+          }
+
+          :host([data-theme="light"]) .overlay {
+            background: rgba(255, 255, 255, 0.48);
+            border-color: rgba(255, 255, 255, 0.28);
+            color: rgba(15, 15, 15, 0.96);
+            text-shadow:
+              0 1px 3px rgba(255, 255, 255, 0.45),
+              0 0 10px rgba(255, 255, 255, 0.2);
+          }
+
           .overlay {
             position: relative;
             max-width: 100%;
@@ -542,9 +597,16 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
             opacity: 1;
           }
 
-          :host(:not(:hover)) .overlay.visible {
+          :host([data-theme="dark"]:not(:hover)) .overlay.visible {
             background: rgba(0, 0, 0, 0.08);
             border-color: transparent;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+          }
+
+          :host([data-theme="light"]:not(:hover)) .overlay.visible {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.14);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
           }
@@ -574,6 +636,8 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
       player.appendChild(host);
     }
 
+    applyTheme(host);
+
     const text = shadow.querySelector('[data-role="overlay"]');
     if (!(text instanceof HTMLDivElement)) {
       throw new Error('Failed to initialize the translation overlay.');
@@ -581,6 +645,7 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
 
     applyOverlayLayout(host, text);
     setupOverlayInteraction(host, text);
+    text.title = options.getLabels().messages.overlayInteractionTitle;
 
     return {
       host,
@@ -631,7 +696,6 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
     };
 
     text.dataset.interactive = 'true';
-    text.title = 'Drag to move, wheel to resize, double-click to reset.';
 
     text.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) {
@@ -738,7 +802,7 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
     const activeTranslation =
       nextActiveIndex >= 0 ? currentTranslations[nextActiveIndex] : null;
     overlay.text.textContent =
-      activeTranslation?.text ?? CONTENT_UI_LABELS.surface.overlayPlaceholder;
+      activeTranslation?.text ?? options.getLabels().surface.overlayPlaceholder;
     overlay.text.classList.toggle('visible', !!activeTranslation);
   }
 
@@ -768,6 +832,7 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
   }
 
   function renderList(panel: SurfaceElements, translations: TranslationChunk[]) {
+    const labels = options.getLabels();
     panel.list.replaceChildren();
 
     translations.forEach((translation, index) => {
@@ -781,7 +846,7 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
         'aria-label',
         `${translation.start} ${translation.text}`,
       );
-      row.title = 'Jump the player to this translated segment.';
+      row.title = labels.messages.jumpToSegment;
 
       const meta = document.createElement('span');
       meta.className = 'item-meta';
@@ -816,6 +881,8 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
     const panel = ensurePanelElements();
 
     if (panel) {
+      applyTheme(panel.host);
+      applyPanelCopy(panel);
       panel.host.style.display = state.panelVisible ? 'block' : 'none';
       panel.exportButton.disabled = !state.exportEnabled;
       panel.exportButton.onclick = () => {
@@ -850,7 +917,11 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
 
     currentTranslations = state.translations;
     if (state.overlayVisible && currentTranslations.length > 0) {
-      ensureOverlayElements();
+      const overlay = ensureOverlayElements();
+      if (overlay) {
+        applyTheme(overlay.host);
+        overlay.text.title = options.getLabels().messages.overlayInteractionTitle;
+      }
       syncOverlayToVideo();
 
       if (syncedVideo) {

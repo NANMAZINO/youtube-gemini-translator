@@ -12,6 +12,8 @@ const SETTINGS_STORAGE_KEYS: string[] = [
   STORAGE_KEYS.sourceLang,
   STORAGE_KEYS.thinkingLevel,
   STORAGE_KEYS.resumeMode,
+  STORAGE_KEYS.uiLocale,
+  STORAGE_KEYS.themeMode,
   STORAGE_KEYS.settingsSchemaVersion,
   LEGACY_STORAGE_KEYS.settingsSchemaVersion,
 ] as const;
@@ -43,6 +45,8 @@ export async function getSettings(): Promise<Settings> {
     targetLang: result[STORAGE_KEYS.targetLang],
     thinkingLevel: result[STORAGE_KEYS.thinkingLevel],
     resumeMode: result[STORAGE_KEYS.resumeMode],
+    uiLocale: result[STORAGE_KEYS.uiLocale],
+    themeMode: result[STORAGE_KEYS.themeMode],
     schemaVersion,
   });
 }
@@ -59,6 +63,8 @@ export async function saveSettings(input: SettingsInput): Promise<Settings> {
     [STORAGE_KEYS.targetLang]: next.targetLang,
     [STORAGE_KEYS.thinkingLevel]: next.thinkingLevel,
     [STORAGE_KEYS.resumeMode]: next.resumeMode,
+    [STORAGE_KEYS.uiLocale]: next.uiLocale,
+    [STORAGE_KEYS.themeMode]: next.themeMode,
     [STORAGE_KEYS.settingsSchemaVersion]: SETTINGS_SCHEMA_VERSION,
   });
   await chrome.storage.local.remove(LEGACY_STORAGE_KEYS.settingsSchemaVersion);

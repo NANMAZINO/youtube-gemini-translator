@@ -1,12 +1,32 @@
 import type { ExportBundle, TranslationChunk } from '../shared/contracts/index.ts';
 
+export class ImportBundleError extends Error {
+  code:
+    | 'IMPORT_BUNDLE_INVALID_JSON'
+    | 'IMPORT_BUNDLE_EMPTY'
+    | 'IMPORT_BUNDLE_INVALID_ROW';
+
+  constructor(
+    code:
+      | 'IMPORT_BUNDLE_INVALID_JSON'
+      | 'IMPORT_BUNDLE_EMPTY'
+      | 'IMPORT_BUNDLE_INVALID_ROW',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ImportBundleError';
+    this.code = code;
+  }
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object';
 }
 
 function normalizeTranslationChunk(value: unknown): TranslationChunk {
   if (!isObject(value)) {
-    throw new Error(
+    throw new ImportBundleError(
+      'IMPORT_BUNDLE_INVALID_ROW',
       'Imported JSON must be a non-empty array of caption rows with "start" and "text".',
     );
   }
@@ -16,7 +36,8 @@ function normalizeTranslationChunk(value: unknown): TranslationChunk {
   const id = typeof value.id === 'string' ? value.id : undefined;
 
   if (!start || !text) {
-    throw new Error(
+    throw new ImportBundleError(
+      'IMPORT_BUNDLE_INVALID_ROW',
       'Imported JSON must be a non-empty array of caption rows with "start" and "text".',
     );
   }
@@ -34,11 +55,15 @@ export function parseImportBundle(jsonText: string): ExportBundle {
   try {
     parsed = JSON.parse(jsonText) as unknown;
   } catch {
-    throw new Error('Imported JSON must be valid JSON subtitle data.');
+    throw new ImportBundleError(
+      'IMPORT_BUNDLE_INVALID_JSON',
+      'Imported JSON must be valid JSON subtitle data.',
+    );
   }
 
   if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error(
+    throw new ImportBundleError(
+      'IMPORT_BUNDLE_EMPTY',
       'Imported JSON must be a non-empty array of caption rows with "start" and "text".',
     );
   }

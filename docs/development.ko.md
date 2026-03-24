@@ -51,6 +51,7 @@ DOM 민감 변경에 해당하는 범주:
 - YouTube transcript DOM 감지 또는 추출 로직
 - Content surface 액션 또는 오버레이 동작
 - Popup 설정, 캐시 액션, API key 흐름
+- Popup hero 영역의 UI 언어/테마 컨트롤과 그에 따른 실시간 재렌더링 동작
 
 ## 브라우저 확인
 
@@ -60,6 +61,12 @@ DOM 민감 변경에 해당하는 범주:
 | 2 | **압축해제된 확장 프로그램을 로드합니다** → `dist/` 폴더 선택 |
 | 3 | 소스 수정 후에는 다시 빌드하고 확장 새로고침 |
 | 4 | DOM 민감 작업은 [Transcript 회귀 체크리스트](transcript-regression-checklist.ko.md)를 기준으로 확인 |
+
+팝업 locale/theme 작업을 수동 확인할 때는 다음도 함께 점검합니다.
+
+- hero 행이 제목, compact UI 언어 선택기, compact 테마 선택기, 버전 배지를 유지하면서 새 카드 없이 정렬되는지
+- locale 변경 시 팝업 문구, 콘텐츠 액션 라벨, 패널 문자열, 오버레이 tooltip이 YouTube 새로고침 없이 바뀌는지
+- `Theme = System`일 때 팝업은 OS 테마를, 콘텐츠 UI는 YouTube 다크 모드를 따르는지
 
 > [!TIP]
 > 확장 로드 후 Chrome DevTools → **Service Worker** 인스펙터로 background script 이슈를 디버깅할 수 있습니다.

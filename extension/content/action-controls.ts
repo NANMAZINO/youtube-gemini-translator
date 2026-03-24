@@ -5,6 +5,12 @@ import {
   type RuntimeTaskViewState,
 } from './runtime-event-consumer.ts';
 import { CONTENT_UI_LABELS } from './ui-labels.ts';
+import type { ContentUiLabels } from '../shared/ui-copy.ts';
+import type { ResolvedTheme } from '../shared/contracts/index.ts';
+import {
+  formatTaskProgress as formatLocalizedTaskProgress,
+  getTaskDetailText,
+} from './task-copy.ts';
 
 const FLOATING_ACTION_HOST_ID = 'yt-ai-open-transcript-host';
 const WATCH_ACTION_TARGET_SELECTORS = [
@@ -43,6 +49,8 @@ interface ContentActionControlsOptions {
   onOpenTranscript: () => void;
   onStartTranslation: () => void;
   onCancelTask: (task: RuntimeTaskViewState | null) => void;
+  getLabels: () => ContentUiLabels;
+  getResolvedTheme: () => ResolvedTheme;
   /** Translation surface 내부의 Translate/Cancel 요소 접근용 콜백 */
   getSurfaceActionElements: () => {
     translateButton: HTMLButtonElement;
@@ -51,21 +59,14 @@ interface ContentActionControlsOptions {
 }
 
 function formatTaskProgress(task: RuntimeTaskViewState) {
-  if (task.totalChunks !== null) {
-    return `${task.completedChunks ?? 0}/${task.totalChunks}`;
-  }
-
-  if (task.translationsCount !== null) {
-    return `${task.translationsCount} segments`;
-  }
-
-  return CONTENT_UI_LABELS.controls.runningHint;
+  return formatLocalizedTaskProgress(task, CONTENT_UI_LABELS);
 }
 
 function resolveHelperText(
   capability: TranscriptDomCapability | null,
   controllerState: PreviewControllerState | null,
   task: RuntimeTaskViewState | null,
+  labels: ContentUiLabels,
 ) {
   if (controllerState?.statusMessage) {
     return controllerState.statusMessage;
@@ -76,14 +77,14 @@ function resolveHelperText(
       case 'running':
       case 'retrying':
       case 'preparing':
-        return task.message ?? formatTaskProgress(task);
+        return getTaskDetailText(task, labels) || formatLocalizedTaskProgress(task, labels);
 
       case 'failed':
       case 'cancelled':
-        return task.message ?? CONTENT_UI_LABELS.controls.idleHint;
+        return getTaskDetailText(task, labels) || labels.controls.idleHint;
 
       case 'completed':
-        return CONTENT_UI_LABELS.controls.completedHint;
+        return labels.controls.completedHint;
 
       case 'idle':
         break;
@@ -91,14 +92,15 @@ function resolveHelperText(
   }
 
   if (capability?.panelOpen) {
-    return CONTENT_UI_LABELS.controls.readyHint;
+    return labels.controls.readyHint;
   }
 
-  return CONTENT_UI_LABELS.controls.openHint;
+  return labels.controls.openHint;
 }
 
 export function projectContentActionState(
   input: ProjectContentActionStateInput,
+  labels: ContentUiLabels = CONTENT_UI_LABELS,
 ): ContentActionState {
   const { capability, controllerState, task } = input;
   const activeTask = !!task && !isTerminalTaskStatus(task.status);
@@ -106,24 +108,24 @@ export function projectContentActionState(
   return {
     showFloatingAction: !capability?.panelOpen,
     floatingLabel: controllerState?.openingTranscript
-      ? CONTENT_UI_LABELS.controls.openingTranscript
-      : CONTENT_UI_LABELS.controls.openTranscript,
+      ? labels.controls.openingTranscript
+      : labels.controls.openTranscript,
     floatingDisabled: !!controllerState?.busy,
     showPanelActions: !!capability?.panelOpen,
     translateLabel: controllerState?.startingTranslation
-      ? CONTENT_UI_LABELS.controls.startingTranslation
+      ? labels.controls.startingTranslation
       : activeTask
-        ? CONTENT_UI_LABELS.controls.translating
+        ? labels.controls.translating
         : task?.status === 'completed'
-          ? CONTENT_UI_LABELS.controls.translateAgain
-          : CONTENT_UI_LABELS.controls.translate,
+          ? labels.controls.translateAgain
+          : labels.controls.translate,
     translateDisabled: !!controllerState?.busy || activeTask,
     showCancelAction: !!capability?.panelOpen && (activeTask || !!controllerState?.cancellingTask),
     cancelLabel: controllerState?.cancellingTask
-      ? CONTENT_UI_LABELS.controls.cancelling
-      : CONTENT_UI_LABELS.controls.cancel,
+      ? labels.controls.cancelling
+      : labels.controls.cancel,
     cancelDisabled: !activeTask || !!controllerState?.cancellingTask,
-    helperText: resolveHelperText(capability, controllerState, task),
+    helperText: resolveHelperText(capability, controllerState, task, labels),
   };
 }
 
@@ -186,15 +188,13 @@ function createActionButtonHost(hostId: string) {
         transform: none;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .action-btn {
-          background: #3ea6ff;
-          color: #0f0f0f;
-        }
+      :host([data-theme="dark"]) .action-btn {
+        background: #3ea6ff;
+        color: #0f0f0f;
+      }
 
-        .action-btn:hover:enabled {
-          opacity: 0.88;
-        }
+      :host([data-theme="dark"]) .action-btn:hover:enabled {
+        opacity: 0.88;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -214,7 +214,7 @@ function createActionButtonHost(hostId: string) {
   return { host, button };
 }
 
-function ensureFloatingActionElements() {
+function ensureFloatingActionElements(theme: ResolvedTheme) {
   let host = document.getElementById(FLOATING_ACTION_HOST_ID) as HTMLDivElement | null;
   let button: HTMLButtonElement | null = null;
 
@@ -229,6 +229,8 @@ function ensureFloatingActionElements() {
   if (!(button instanceof HTMLButtonElement)) {
     throw new Error('Floating action button is unavailable.');
   }
+
+  host.dataset.theme = theme;
 
   return {
     host,
@@ -249,7 +251,7 @@ export function createContentActionControls(
       return;
     }
 
-    const elements = ensureFloatingActionElements();
+    const elements = ensureFloatingActionElements(options.getResolvedTheme());
     if (elements.host.parentElement !== target) {
       target.appendChild(elements.host);
     }
@@ -292,7 +294,7 @@ export function createContentActionControls(
 
   return {
     render(input: ProjectContentActionStateInput) {
-      const state = projectContentActionState(input);
+      const state = projectContentActionState(input, options.getLabels());
       renderFloatingAction(state);
       renderPanelActions(state, input.task);
     },

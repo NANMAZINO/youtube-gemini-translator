@@ -19,6 +19,17 @@ import {
 } from './runtime-event-consumer.ts';
 import { projectTranslationSurfaceState } from './surface-state.ts';
 import { isRuntimePageMessage } from '../shared/messaging.ts';
+import {
+  DEFAULT_SETTINGS,
+  type Settings,
+} from '../shared/contracts/index.ts';
+import { getContentUiLabels } from './ui-labels.ts';
+import {
+  detectSystemDarkTheme,
+  detectYouTubeDarkTheme,
+  resolveContentTheme,
+  resolveUiLocale,
+} from '../shared/ui-preferences.ts';
 
 declare global {
   interface Window {
@@ -34,6 +45,89 @@ let currentTask: RuntimeTaskViewState | null = null;
 let currentYouTubeCapability: TranscriptDomCapability | null = null;
 let currentControllerState: PreviewControllerState | null = null;
 let currentVideoId = getCurrentYouTubeVideoId();
+let currentSettings: Settings = DEFAULT_SETTINGS;
+let systemThemeMediaQuery: MediaQueryList | null = null;
+let htmlThemeObserver: MutationObserver | null = null;
+let appThemeObserver: MutationObserver | null = null;
+
+function getResolvedUiLocale() {
+  return resolveUiLocale(currentSettings.uiLocale, navigator.language);
+}
+
+function getResolvedTheme() {
+  return resolveContentTheme(currentSettings.themeMode, {
+    youtubeDark: detectYouTubeDarkTheme(document),
+    systemDark: detectSystemDarkTheme(
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia.bind(window)
+        : undefined,
+    ),
+  });
+}
+
+function getLabels() {
+  return getContentUiLabels(getResolvedUiLocale());
+}
+
+async function syncCurrentSettings() {
+  const response = await chrome.runtime.sendMessage({
+    kind: 'runtime.command',
+    type: 'settings.get',
+  });
+
+  if (
+    !response ||
+    typeof response !== 'object' ||
+    response.kind !== 'runtime.command.result' ||
+    response.type !== 'settings.get' ||
+    response.ok !== true
+  ) {
+    return;
+  }
+
+  currentSettings = response.data;
+  if (!previewController.refreshLocalizedStatusMessage()) {
+    renderAll();
+  }
+}
+
+function refreshThemeIfNeeded() {
+  if (currentSettings.themeMode !== 'system') {
+    return;
+  }
+
+  renderAll();
+}
+
+function bindThemeObservers() {
+  systemThemeMediaQuery?.removeEventListener('change', refreshThemeIfNeeded);
+  systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  systemThemeMediaQuery.addEventListener('change', refreshThemeIfNeeded);
+
+  htmlThemeObserver?.disconnect();
+  htmlThemeObserver = new MutationObserver(() => {
+    refreshThemeIfNeeded();
+  });
+  htmlThemeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'dark', 'dark-theme', 'theme', 'is-dark-theme'],
+  });
+
+  appThemeObserver?.disconnect();
+  const ytdApp = document.querySelector('ytd-app');
+  if (!(ytdApp instanceof HTMLElement)) {
+    appThemeObserver = null;
+    return;
+  }
+
+  appThemeObserver = new MutationObserver(() => {
+    refreshThemeIfNeeded();
+  });
+  appThemeObserver.observe(ytdApp, {
+    attributes: true,
+    attributeFilter: ['class', 'dark', 'dark-theme', 'theme', 'is-dark-theme'],
+  });
+}
 
 function getDisplayedTranslations() {
   const controllerState = currentControllerState ?? previewController.getState();
@@ -64,6 +158,7 @@ function downloadBundle(bundle: ReturnType<typeof getDisplayedTranslations>) {
 }
 
 const previewController = createPreviewController({
+  getLabels,
   onStateChanged(state) {
     currentControllerState = state;
     renderAll();
@@ -71,6 +166,8 @@ const previewController = createPreviewController({
 });
 
 const translationSurface = createTranslationSurface({
+  getLabels,
+  getResolvedTheme,
   onExport(translations) {
     downloadBundle(translations);
   },
@@ -90,6 +187,8 @@ const translationSurface = createTranslationSurface({
   },
 });
 const actionControls = createContentActionControls({
+  getLabels,
+  getResolvedTheme,
   onOpenTranscript() {
     void previewController.openTranscript();
   },
@@ -106,6 +205,7 @@ const actionControls = createContentActionControls({
 
 function renderAll() {
   const controllerState = currentControllerState ?? previewController.getState();
+  const labels = getLabels();
 
   actionControls.render({
     capability: currentYouTubeCapability,
@@ -118,7 +218,7 @@ function renderAll() {
       capability: currentYouTubeCapability,
       controllerState,
       task: currentTask,
-    }),
+    }, labels),
   );
 }
 
@@ -139,6 +239,8 @@ function clearCurrentSurfaceState(statusMessage: string | null = null) {
 if (!window.__YT_AI_CONTENT_RUNTIME__) {
   window.__YT_AI_CONTENT_RUNTIME__ = true;
   resetRuntimeProjection();
+  bindThemeObservers();
+  void syncCurrentSettings();
 
   console.info(
     `[YT AI Translator] Content runtime active on YouTube (${RUNTIME_META.phase}: ${RUNTIME_META.title})`,
@@ -154,6 +256,7 @@ if (!window.__YT_AI_CONTENT_RUNTIME__) {
     }
 
     resetPageState(nextVideoId);
+    bindThemeObservers();
     void previewController.handleVideoNavigation();
   });
 }
@@ -206,6 +309,19 @@ if (!window.__YT_AI_PAGE_MESSAGE_LISTENER__) {
     return false;
   });
 }
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (
+    areaName !== 'local' ||
+    (!changes.uiLocale &&
+      !changes.themeMode &&
+      !changes.settingsSchemaVersion)
+  ) {
+    return;
+  }
+
+  void syncCurrentSettings();
+});
 
 if (!window.__YT_AI_TRANSCRIPT_DOM_OBSERVER__) {
   window.__YT_AI_TRANSCRIPT_DOM_OBSERVER__ = true;
