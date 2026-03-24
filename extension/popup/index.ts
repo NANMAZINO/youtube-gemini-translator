@@ -69,8 +69,8 @@ const elements = {
   costLabel: document.getElementById('costLabel') as HTMLSpanElement,
   costInfoBadge: document.getElementById('costInfoBadge') as HTMLButtonElement,
   estimatedCost: document.getElementById('estimatedCost') as HTMLSpanElement,
-  cacheLabel: document.getElementById('cacheLabel') as HTMLSpanElement,
-  cacheCount: document.getElementById('cacheCount') as HTMLSpanElement,
+  usageTitle: document.getElementById('usageTitle') as HTMLHeadingElement,
+  usageInfoBadge: document.getElementById('usageInfoBadge') as HTMLButtonElement,
   cacheTitle: document.getElementById('cacheTitle') as HTMLHeadingElement,
   clearCache: document.getElementById('clearCache') as HTMLButtonElement,
   cacheSummary: document.getElementById('cacheSummary') as HTMLParagraphElement,
@@ -203,8 +203,9 @@ function renderLocalizedUi(
   elements.todayLabel.textContent = copy.popup.today;
   elements.monthlyLabel.textContent = copy.popup.lastThirtyDays;
   elements.costLabel.textContent = copy.popup.cost;
+  elements.usageTitle.textContent = copy.popup.usageTitle;
+  setInfoBadgeCopy(elements.usageInfoBadge, copy.popup.usageInfo);
   setInfoBadgeCopy(elements.costInfoBadge, copy.popup.costInfo);
-  elements.cacheLabel.textContent = copy.popup.cache;
   elements.cacheTitle.textContent = copy.popup.cache;
   elements.clearCache.textContent = copy.popup.clearCache;
 
@@ -326,6 +327,7 @@ function bindEvents() {
     elements.heroInfoBadge,
     elements.thinkingLevelInfoBadge,
     elements.resumeModeInfoBadge,
+    elements.usageInfoBadge,
     elements.costInfoBadge,
   ].forEach(bindInfoBadge);
 
@@ -586,7 +588,6 @@ function renderCacheList(
       cacheList: [...cacheList],
     };
   }
-  elements.cacheCount.textContent = `${cacheList.length}`;
   elements.cacheSummary.textContent = summarizeCacheList(
     cacheList.length,
     cacheList.length,
@@ -595,6 +596,7 @@ function renderCacheList(
   elements.cacheList.replaceChildren();
 
   if (cacheList.length === 0) {
+    elements.cacheSummary.textContent = '';
     const empty = document.createElement('li');
     empty.className = 'empty-state';
     empty.textContent = uiCopy.popup.cacheEmpty;
@@ -655,7 +657,6 @@ function renderCacheLoadError(
       message,
     };
   }
-  elements.cacheCount.textContent = '--';
   elements.cacheSummary.textContent = popupCopy.cacheUnavailable;
   elements.cacheList.replaceChildren();
 
@@ -859,7 +860,6 @@ async function handleClearCache() {
     }
 
     renderCacheList([]);
-    elements.cacheCount.textContent = '0';
     await notifyActiveYouTubeTab({
       kind: 'runtime.page',
       type: 'cache.clear',

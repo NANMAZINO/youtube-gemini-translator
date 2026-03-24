@@ -336,11 +336,25 @@ label {
   letter-spacing: 0.01em;
 }
 
+.field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
 .label-with-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+.label-with-badge > label {
+  display: inline;
+  gap: 0;
 }
 
 .info-popover {
@@ -585,26 +599,44 @@ button.info-badge.info-badge-sm {
   text-decoration: underline;
 }
 
-/* ── 통계 그리드 ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+/* ── 사용량 통합 카드 ── */
+.usage-card {
+  gap: 0;
+  padding: 0;
 }
 
-.stat-card {
-  border-radius: var(--radius-lg);
-  padding: 14px;
+.usage-card-header {
+  padding: 16px 16px 0;
+}
+
+.usage-top-stats {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.usage-stat {
+  padding: 16px;
   display: grid;
   gap: 6px;
-  box-shadow: var(--shadow-sm);
-  cursor: default;
 }
 
-.stat-card:hover {
-  border-color: var(--line-strong);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+.usage-divider {
+  width: 1px;
+  height: clamp(24px, 40px, 60%);
+  background: var(--line);
+}
+
+.usage-bottom-stat {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel-soft);
+  /* 라운딩 유지 (모서리가 깨지지 않도록) */
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
 }
 
 .stat-label {
@@ -627,13 +659,23 @@ button.info-badge.info-badge-sm {
   font-size: 9px;
 }
 
-.stat-card strong {
+.usage-stat strong,
+.usage-bottom-stat strong {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: var(--text);
+}
+
+.usage-stat strong {
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: var(--text);
+}
+
+.usage-bottom-stat strong {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ── 캐시 리스트 ── */

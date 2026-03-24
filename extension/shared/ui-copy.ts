@@ -59,6 +59,8 @@ interface UiCopyShape {
     resumeMode: string;
     resumeModeInfo: string;
     saveSettings: string;
+    usageTitle: string;
+    usageInfo: string;
     today: string;
     lastThirtyDays: string;
     cost: string;
@@ -247,6 +249,8 @@ function buildEnglishCopy(): UiCopyShape {
       resumeModeInfo:
         'When enabled, the translator reuses saved partial progress and continues an unfinished translation instead of starting over.',
       saveSettings: 'Save settings',
+      usageTitle: 'Token usage',
+      usageInfo: 'For exact token counts and billing details, check Google AI Studio.',
       today: 'Today',
       lastThirtyDays: '30 Days',
       cost: 'Cost',
@@ -451,7 +455,7 @@ function buildKoreanCopy(): UiCopyShape {
       appName: 'YouTube AI Translator',
       brandName: 'YouTube AI Translator',
       unofficialToolNotice:
-        '비공식 도구입니다. YouTube 또는 Google과 관련이 없습니다.',
+        'YouTube나 Google과 무관한 비공식 도구입니다.',
       uiLocaleOptions: {
         auto: '자동',
         en: '영어',
@@ -481,11 +485,11 @@ function buildKoreanCopy(): UiCopyShape {
       },
     },
     popup: {
-      heroUiLanguage: 'UI 언어',
+      heroUiLanguage: '인터페이스 언어',
       heroTheme: '테마',
       apiKeyTitle: 'Gemini API 키',
       apiKeyLabel: 'API 키',
-      apiKeyPlaceholder: 'API 키를 입력하세요',
+      apiKeyPlaceholder: 'API 키를 입력해 주세요',
       show: '보기',
       hide: '숨기기',
       showApiKey: 'API 키 보기',
@@ -494,68 +498,70 @@ function buildKoreanCopy(): UiCopyShape {
       clear: '지우기',
       deleteAction: '삭제',
       apiKeyHintHtml:
-        '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>에서 키를 발급하세요.',
+        '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>에서 API 키를 무료로 발급받을 수 있습니다.',
       settingsTitle: '설정',
       sourceLanguage: '원본 언어',
       targetLanguage: '대상 언어',
-      thinkingLevel: '추론 수준',
-      thinkingLevelInfo: '대부분의 번역은 Minimal로도 충분합니다.',
-      resumeMode: '미완료 작업 이어서 실행',
+      thinkingLevel: 'AI 추론 수준',
+      thinkingLevelInfo: '일반적인 영상은 Minimal 수준으로도 충분히 매끄럽게 번역됩니다.',
+      resumeMode: '중단된 번역 이어서 하기',
       resumeModeInfo:
-        '켜면 이전에 저장된 부분 진행 상태를 이어 받아, 끝나지 않은 번역을 처음부터 다시 하지 않고 계속 진행합니다.',
-      saveSettings: '설정 저장',
+        '이 옵션을 켜면 중간에 멈춘 번역을 처음부터 다시 시작하지 않고, 멈춘 부분부터 이어서 진행합니다.',
+      saveSettings: '변경 내용 저장',
+      usageTitle: '토큰 소모량',
+      usageInfo: '정확한 수치는 Google AI Studio에서 확인해 주세요.',
       today: '오늘',
-      lastThirtyDays: '30일',
+      lastThirtyDays: '최근 30일',
       cost: '예상 비용',
       costInfo:
-        '예상 비용입니다. 실제 청구 금액은 Gemini 가격 정책, 반올림, 제공자 측 집계 방식에 따라 달라질 수 있습니다.',
-      cache: '캐시',
-      clearCache: '캐시 비우기',
-      loadingSettings: '번역기 설정을 불러오는 중...',
-      enterApiKeyFirst: '먼저 Gemini API 키를 입력하세요.',
+        '어디까지나 예상 비용일 뿐입니다. 실제 청구 금액은 Gemini의 가격 정책이나 환율 등에 따라 다를 수 있습니다.',
+      cache: '보관함',
+      clearCache: '비우기',
+      loadingSettings: '번역기 설정 불러오는 중...',
+      enterApiKeyFirst: '기능을 사용하려면 먼저 Gemini API 키를 입력해 주세요.',
       invalidApiKey:
-        '아직 올바른 Gemini API 키 형식으로 보이지 않습니다.',
-      apiKeySaved: 'API 키를 저장했습니다.',
-      apiKeyCleared: 'API 키를 지웠습니다.',
-      settingsSaved: '설정을 저장했습니다.',
-      failedToSaveApiKey: 'API 키를 저장하지 못했습니다.',
-      failedToClearApiKey: 'API 키를 지우지 못했습니다.',
-      failedToSaveSettings: '설정을 저장하지 못했습니다.',
-      failedToDeleteCacheEntry: '캐시 항목을 삭제하지 못했습니다.',
-      failedToClearCache: '캐시를 비우지 못했습니다.',
-      deleteCacheConfirm: '이 캐시 번역을 삭제할까요?',
-      cachedTranslationDeleted: '캐시된 번역을 삭제했습니다.',
-      clearCacheConfirm: '모든 캐시 번역을 삭제할까요?',
-      cacheCleared: '캐시를 비웠습니다.',
+        '입력하신 정보가 올바른 Gemini API 키 형식이 아닌 것 같습니다.',
+      apiKeySaved: 'API 키가 저장되었습니다.',
+      apiKeyCleared: 'API 키가 삭제되었습니다.',
+      settingsSaved: '설정이 저장되었습니다.',
+      failedToSaveApiKey: 'API 키 서식 저장 중 문제가 발생했습니다.',
+      failedToClearApiKey: 'API 키를 삭제하는 데 실패했습니다.',
+      failedToSaveSettings: '설정 저장 중 문제가 발생했습니다.',
+      failedToDeleteCacheEntry: '번역 기록을 삭제하지 못했습니다.',
+      failedToClearCache: '번역 보관함을 비우지 못했습니다.',
+      deleteCacheConfirm: '저장된 번역 데이터를 정말 삭제할까요?',
+      cachedTranslationDeleted: '저장된 번역을 삭제했습니다.',
+      clearCacheConfirm: '보관된 모든 번역 데이터를 지울까요?',
+      cacheCleared: '번역 보관함을 비웠습니다.',
       failedSections: {
-        apiKey: '저장된 API 키',
+        apiKey: 'API 키',
         translationSettings: '번역 설정',
         usageTotals: '사용량 통계',
-        savedBundles: '저장된 자막 번들',
+        savedBundles: '저장된 번역 데이터',
       },
-      readySummary: '모든 데이터가 준비되었습니다.',
+      readySummary: '모든 준비가 끝났습니다.',
       partialRefreshSummary(items) {
-        return `사용 가능한 데이터는 불러왔지만 ${items.join(' 및 ')} 새로고침에는 실패했습니다.`;
+        return `기존 데이터는 불러왔지만, ${items.join(' 및 ')} 정보는 최신화하지 못했습니다.`;
       },
-      cacheEmpty: '저장된 자막 번들이 아직 없습니다.',
+      cacheEmpty: '아직 보관된 번역 데이터가 없어요.',
       cacheCount(count) {
-        return `저장된 자막 번들 ${count}개`;
+        return `보관된 번역 ${count}개`;
       },
       cacheCountPartial(visibleCount, totalCount) {
-        return `저장된 자막 번들 ${totalCount}개 중 ${visibleCount}개 표시 중`;
+        return `전체 ${totalCount}개 중 ${visibleCount}개의 번역 기록을 표시하고 있습니다.`;
       },
       cacheUnavailable:
-        '저장된 자막 번들을 일시적으로 사용할 수 없습니다.',
+        '저장된 번역 데이터를 일시적으로 불러올 수 없습니다.',
       cacheUnavailableDetail(message) {
-        return `지금은 저장된 자막 번들을 불러올 수 없습니다. ${message}`;
+        return `지금은 번역 기록을 불러올 수 없습니다. (${message})`;
       },
-      cacheStateResume: '이어하기 가능',
-      cacheStateRefined: '다듬음',
-      cacheStateReady: '준비됨',
+      cacheStateResume: '이어서 번역 가능',
+      cacheStateRefined: '다듬기 완료',
+      cacheStateReady: '준비 완료',
       untitledVideo: '제목 없는 영상',
       fallbackVideoTitle: '이 영상',
       savedOn(dateText) {
-        return `${dateText} 저장`;
+        return `${dateText}에 저장됨`;
       },
       deleteCachedTranslationFor(title) {
         return `${title}의 캐시 번역 삭제`;
@@ -564,30 +570,30 @@ function buildKoreanCopy(): UiCopyShape {
     content: {
       controls: {
         openTranscript: '스크립트 열기',
-        openingTranscript: '스크립트 여는 중...',
-        translate: '번역',
+        openingTranscript: '자막 스크립트 불러오는 중...',
+        translate: '번역 시작',
         translateAgain: '다시 번역',
-        refine: '다듬기',
-        refined: '다듬음',
-        startingTranslation: '시작 중...',
-        startingRefine: '다듬는 중...',
-        translating: '번역 중...',
+        refine: '번역 재분할',
+        refined: '다듬기 완료',
+        startingTranslation: '번역 준비 중...',
+        startingRefine: '문맥 짚어보는 중...',
+        translating: '열심히 번역 중...',
         cancel: '취소',
-        cancelling: '취소 중...',
-        openHint: '시작하려면 스크립트를 여세요.',
-        readyHint: '번역할 준비가 되었습니다.',
-        runningHint: '번역 중...',
-        completedHint: '완료되었습니다.',
+        cancelling: '취소하는 중...',
+        openHint: '글로벌 자막 스크립트를 열면 번역을 시작할 수 있습니다.',
+        readyHint: '번역 요청 버튼을 눌러주세요.',
+        runningHint: '번역이 진행 중입니다...',
+        completedHint: '번역이 완료되었습니다.',
         idleHint: '',
       },
       monitor: {
         title: 'YT AI 번역기',
-        slice: '조각',
+        slice: '구간',
         youtube: 'YouTube',
         task: '작업',
-        progress: '진행',
+        progress: '진행도',
         target: '대상',
-        updated: '업데이트',
+        updated: '마지막 업데이트',
         open: '열기',
         translate: '번역',
         cancel: '취소',
@@ -595,100 +601,100 @@ function buildKoreanCopy(): UiCopyShape {
       surface: {
         title: '',
         export: '내보내기',
-        import: '가져오기',
+        import: '불러오기',
         waiting: '',
         ready: '',
-        cachedReady: '캐시됨',
-        refinedReady: '다듬음',
-        importedReady: '가져옴',
+        cachedReady: '저장됨',
+        refinedReady: '다듬어짐',
+        importedReady: '불러옴',
         partialResumeAvailable:
-          '부분 캐시가 있습니다. 이어서 실행 모드를 켜거나 JSON을 가져오세요.',
+          '이전에 번역하다 만 기록이 있어요. [이어서 번역하기] 모드를 켜거나 백업해둔 JSON 파일을 불러와주세요.',
         empty: '',
         overlayPlaceholder: '',
       },
       status: {
         idle: '',
-        openingTranscript: '스크립트 여는 중...',
-        transcriptReady: '준비됨',
-        startingTranslation: '준비 중...',
-        startingRefine: '다듬는 중...',
+        openingTranscript: '스크립트 불러오는 중...',
+        transcriptReady: '준비 완료',
+        startingTranslation: '번역 시작 데이터 수집 중...',
+        startingRefine: '다듬을 준비 중...',
         running: '번역 중...',
-        retrying: '재시도 중...',
-        completed: '완료',
-        failed: '실패',
+        retrying: '잠시 후 다시 시도합니다...',
+        completed: '작업 완료',
+        failed: '실패함',
         cancelled: '취소됨',
       },
       messages: {
-        genericActionFailed: '작업을 완료하지 못했습니다.',
-        videoIdMissing: '현재 YouTube 영상 ID를 확인할 수 없습니다.',
+        genericActionFailed: '작업 처리 중 문제가 발생했습니다.',
+        videoIdMissing: '현재 재생 중인 영상 ID를 확인할 수 없습니다.',
         extractTranscriptFromPanel:
-          'YouTube 패널에서 대본 구간을 추출하는 중...',
+          'YouTube에서 자막 구분을 추출하고 있습니다...',
         noTranscriptExtracted:
-          '현재 페이지에서 대본 구간을 추출하지 못했습니다.',
-        startResumeAwareTask: '이어받기 가능한 번역 작업을 시작하는 중...',
-        startTranslationTask: '번역 작업을 시작하는 중...',
-        noDraftToRefine: '다듬을 번역 초안이 아직 없습니다.',
+          '이 영상에는 추출할 수 있는 자막 정보가 없습니다.',
+        startResumeAwareTask: '멈췄던 부분부터 번역 작업을 이어갑니다...',
+        startTranslationTask: '새로운 번역 작업을 시작합니다...',
+        noDraftToRefine: '다듬기 작업을 진행할 초안 번역이 아직 없습니다.',
         extractOriginalForRefine:
-          '다듬기를 위해 원본 대본 구간을 추출하는 중...',
+          '다듬기를 위해 원문을 살펴보고 있습니다...',
         noOriginalForRefine:
-          '다듬기를 위한 원본 대본 구간을 추출하지 못했습니다.',
+          '다듬기 작업의 기준이 될 원본 자막을 찾지 못했습니다.',
         backgroundTaskStarted:
-          '백그라운드 작업이 시작되었습니다. 첫 런타임 이벤트를 기다리는 중...',
+          '백그라운드에서 작업을 시작했습니다. 서버 응답을 기다리는 중...',
         backgroundRefineTaskStarted:
-          '백그라운드 다듬기 작업이 시작되었습니다. 첫 런타임 이벤트를 기다리는 중...',
+          '백그라운드에서 다듬기 작업을 시작했습니다. 서버 응답을 기다리는 중...',
         importingJson:
-          '번역 표면에 JSON 자막을 가져오는 중...',
+          '백업해둔 자막 데이터를 화면에 복원 중입니다...',
         importedReadyAndCached:
-          '가져온 자막이 준비되었고 로컬 캐시에 저장되었습니다.',
-        noActiveTaskToCancel: '취소할 활성 작업이 없습니다.',
-        requestingCancellation: '활성 작업 취소를 요청하는 중...',
+          '성공적으로 자막 데이터를 불러왔습니다. 로컬 기기에도 백업해두었어요.',
+        noActiveTaskToCancel: '현재 진행 중인 취소 가능한 작업이 없습니다.',
+        requestingCancellation: '작업 취소 명령을 보내는 중...',
         cancellationRequested:
-          '취소를 요청했습니다. 런타임 확인을 기다리는 중...',
-        jumpToSegment: '플레이어를 이 번역 구간으로 이동합니다.',
-        importJsonTitle: 'JSON 자막 번들을 가져옵니다.',
-        toggleTranscript: '스크립트 접기/펼치기',
-        translationStatusAria: '번역 상태',
-        translatedTranscriptMapAria: '번역된 대본 목록',
-        translatedTranscriptListAria: '번역된 대본',
+          '취소를 백그라운드에 요청했습니다. 정리될 때까지 잠시만 기다려주세요...',
+        jumpToSegment: '플레이어를 이 자막의 시간대로 이동시킵니다.',
+        importJsonTitle: '자막 백업 파일 (JSON) 불러오기',
+        toggleTranscript: '번역된 스크립트 접기/펼치기',
+        translationStatusAria: '현재 번역 상태',
+        translatedTranscriptMapAria: '전체 번역된 대본 목록',
+        translatedTranscriptListAria: '번역 대본 읽기',
         overlayInteractionTitle:
-          '드래그로 이동하고, 휠로 크기를 조절하고, 더블클릭으로 초기화합니다.',
+          '드래그하여 자유롭게 이동, 스크롤 휠로 크기 조절, 더블 클릭하면 제자리로 돌아옵니다.',
         importLockedVisible:
-          '현재 번역이 화면에 보이는 동안에는 가져오기를 사용할 수 없습니다.',
+          '화면에 번역 결과가 표시 중일 때는 불러오기 기능을 사용할 수 없어요.',
         importWillReplaceHiddenDraft:
-          'JSON 자막 번들을 가져옵니다. 이 영상의 숨겨진 저장 초안은 대체됩니다.',
+          '백업 파일을 불러오기 전 주의: 이 영상에 자동 저장되어 있던 번역 보관 데이터는 모두 덮어씌워집니다.',
         importIntoSurface:
-          '번역 표면으로 JSON 자막 번들을 가져옵니다.',
+          '화면에 백업해둔 자막 데이터를 다시 깔아줍니다.',
         translatedSegments(count) {
-          return `${count}개 구간`;
+          return `번역된 구간 ${count}개`;
         },
         completedSegments(count) {
-          return `번역된 구간 ${count}개를 완료했습니다.`;
+          return `총 ${count}개의 구간 번역을 완료했습니다.`;
         },
         completedRefineSegments(count) {
-          return `다듬기 결과 ${count}개 구간을 완료했습니다.`;
+          return `${count}개 구간의 문맥 다듬기를 끝마쳤습니다.`;
         },
         resumedFromChunk(completed, total) {
-          return `${completed}/${total} 청크부터 이어서 시작했습니다.`;
+          return `전체 ${total}조각 중 ${completed}번째 조각부터 이어서 번역을 재개합니다.`;
         },
       },
       errors: {
-        ABORTED: '작업이 취소되었습니다.',
-        API_KEY_MISSING: 'API 키가 설정되어 있지 않습니다.',
-        EMPTY_DRAFT: '다듬기를 시작하려면 번역 초안 구간이 최소 1개 필요합니다.',
+        ABORTED: '작업이 사용자에 의해 취소되었습니다.',
+        API_KEY_MISSING: '이 기능을 위해 먼저 Gemini API 키를 저장해 주세요.',
+        EMPTY_DRAFT: '다듬기 기능을 실행하려면 번역된 구간이 최소 1개 이상 필요합니다.',
         EMPTY_TRANSCRIPT:
-          '번역을 시작하려면 대본 구간이 최소 1개 필요합니다.',
+          '영상에서 캡션(자막)을 찾을 수 없어서 번역을 시작할 수 없어요.',
         IMPORT_BUNDLE_EMPTY:
-          '가져온 JSON은 "start"와 "text"가 있는 자막 행 배열이어야 하며 비어 있으면 안 됩니다.',
+          '가져온 JSON 파일에 분석할 수 있는 자막 텍스트 정보가 없어요.',
         IMPORT_BUNDLE_INVALID_JSON:
-          '가져온 JSON은 올바른 JSON 자막 데이터여야 합니다.',
+          '가져온 JSON 파일이 손상되었거나 올바른 자막 형식이 아닙니다.',
         IMPORT_BUNDLE_INVALID_ROW:
-          '가져온 JSON은 "start"와 "text"가 있는 자막 행 배열이어야 하며 비어 있으면 안 됩니다.',
+          '가져온 JSON 파일 내부 항목의 필수 데이터(시작 시간, 내용 등)가 부족합니다.',
         MODEL_OVERLOADED:
-          'Gemini가 일시적으로 과부하 상태입니다. 잠시 후 다시 시도하세요.',
+          '현재 Gemini API에 요청이 많이 몰려 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.',
         QUOTA_EXCEEDED:
-          'Gemini 사용 한도를 초과했습니다. 요금제 또는 결제를 확인한 뒤 다시 시도하세요.',
-        REFINE_FAILED: '다듬기에 실패했습니다.',
-        TRANSLATION_FAILED: '번역에 실패했습니다.',
+          'Gemini API 무료 사용 한도를 초과했습니다. 사용량이나 결제 상태를 확인해 주세요.',
+        REFINE_FAILED: '문맥 다듬기 작업 중 오류가 발생했습니다.',
+        TRANSLATION_FAILED: '번역 처리 중 문제가 발생했습니다.',
       },
     },
   };

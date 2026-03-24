@@ -908,7 +908,9 @@ export function createTranslationSurface(options: TranslationSurfaceOptions) {
       panel.refineButton.onclick = () => {
         void options.onStartRefine();
       };
-      panel.progressValue.textContent = state.progressText;
+      panel.progressValue.textContent = [state.statusText, state.progressText]
+        .filter((value) => value.length > 0)
+        .join(' ');
       panel.detailValue.textContent = state.detailText;
       panel.emptyValue.textContent =
         state.translations.length === 0 ? state.emptyText : '';

@@ -82,9 +82,9 @@
             <span id="targetLangLabel"></span>
             <select id="targetLang"></select>
           </label>
-          <label>
+          <div class="field">
             <span class="label-with-badge">
-              <span id="thinkingLevelLabel"></span>
+              <label for="thinkingLevel" id="thinkingLevelLabel"></label>
               <button
                 id="thinkingLevelInfoBadge"
                 class="info-badge info-badge-sm"
@@ -94,10 +94,10 @@
               </button>
             </span>
             <select id="thinkingLevel"></select>
-          </label>
-          <label class="toggle">
+          </div>
+          <div class="field toggle">
             <span class="label-with-badge">
-              <span id="resumeModeLabel"></span>
+              <label for="resumeMode" id="resumeModeLabel"></label>
               <button
                 id="resumeModeInfoBadge"
                 class="info-badge info-badge-sm"
@@ -107,21 +107,36 @@
               </button>
             </span>
             <input id="resumeMode" type="checkbox" />
-          </label>
+          </div>
           <button type="submit" id="saveSettings" class="primary"></button>
         </form>
       </section>
 
-      <section class="stats-grid">
-        <article class="stat-card">
-          <span class="stat-label" id="todayLabel"></span>
-          <strong id="todayTokens">0</strong>
-        </article>
-        <article class="stat-card">
-          <span class="stat-label" id="monthlyLabel"></span>
-          <strong id="monthlyTokens">0</strong>
-        </article>
-        <article class="stat-card">
+      <section class="card usage-card">
+        <div class="card-header usage-card-header">
+          <div class="label-with-badge">
+            <h2 id="usageTitle"></h2>
+            <button
+              id="usageInfoBadge"
+              class="info-badge info-badge-sm"
+              type="button"
+            >
+              i
+            </button>
+          </div>
+        </div>
+        <div class="usage-top-stats">
+          <div class="usage-stat">
+            <span class="stat-label" id="todayLabel"></span>
+            <strong id="todayTokens">0</strong>
+          </div>
+          <div class="usage-divider"></div>
+          <div class="usage-stat">
+            <span class="stat-label" id="monthlyLabel"></span>
+            <strong id="monthlyTokens">0</strong>
+          </div>
+        </div>
+        <div class="usage-bottom-stat">
           <div class="stat-label-row">
             <span class="stat-label" id="costLabel"></span>
             <button
@@ -133,11 +148,7 @@
             </button>
           </div>
           <strong id="estimatedCost">$0.000</strong>
-        </article>
-        <article class="stat-card">
-          <span class="stat-label" id="cacheLabel"></span>
-          <strong id="cacheCount">0</strong>
-        </article>
+        </div>
       </section>
 
       <section class="card">
