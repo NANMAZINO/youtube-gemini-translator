@@ -1,5 +1,6 @@
 {
   "name": "yg-translator",
+  "version": "3.0.1",
   "private": true,
   "license": "MIT",
   "type": "module",

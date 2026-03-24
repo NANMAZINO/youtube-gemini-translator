@@ -45,7 +45,24 @@ Translations appear in **two surfaces simultaneously**: the transcript panel bes
 | **Cache Management** | Per-video cache with popup controls for delete, clear, and usage stats |
 | **Local API Key** | Stored locally in obfuscated form — no relay server, no external auth |
 
-## 🚀 Quick Start
+## 🚀 Installation
+
+### End-user install
+
+1. Download the latest `youtube-ai-translator-vx.y.z.zip` from the GitHub **Releases** page
+2. Extract the ZIP file
+3. Open **`chrome://extensions`** → enable **Developer mode**
+4. Click **Load unpacked** → select the extracted `youtube-ai-translator/` folder
+5. Click the extension icon → save your Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
+6. Open any YouTube video with captions → **Open Transcript** → **Translate**
+
+> [!TIP]
+> End users can install directly from the release ZIP without downloading the source code or running `npm install` / `npm run build`.
+
+> [!TIP]
+> The `youtube-ai-translator/` folder you choose in Chrome should contain `manifest.json` directly. If you pick a parent folder instead, Chrome will not load the extension.
+
+### Build from source
 
 ```bash
 git clone https://github.com/your-username/yg-translator.git
@@ -155,7 +172,7 @@ npm run test:coverage    # Coverage gate for key runtime modules
 
 - Only works on videos with available YouTube captions
 - Gemini quota, overload, or service errors may surface as `403`, `429`, or `503` failures
-- Installation requires Chrome Developer Mode
+- Installation still requires Chrome Developer Mode unless the extension is published to the Chrome Web Store
 
 ## 📄 License
 

@@ -45,7 +45,24 @@
 | **캐시 관리** | 동영상별 캐시, 팝업에서 삭제·초기화·사용량 통계 확인 |
 | **로컬 API Key** | 난독화 저장 — 중계 서버 없음, 외부 인증 없음 |
 
-## 🚀 빠른 시작
+## 🚀 설치
+
+### 일반 사용자 설치
+
+1. GitHub의 **Releases** 페이지에서 최신 `youtube-ai-translator-vx.y.z.zip` 파일 다운로드
+2. ZIP 압축 해제
+3. **`chrome://extensions`** 열기 → **개발자 모드** 켜기
+4. **압축해제된 확장 프로그램을 로드합니다** → 압축 해제 후 생성된 `youtube-ai-translator/` 폴더 선택
+5. 확장 아이콘 클릭 → [Google AI Studio](https://aistudio.google.com/apikey)에서 만든 Gemini API Key 저장
+6. 자막이 있는 YouTube 영상 열기 → **Open Transcript** → **Translate**
+
+> [!TIP]
+> 일반 사용자는 소스코드를 받을 필요 없이 Releases의 ZIP만 내려받아 설치하면 됩니다.
+
+> [!TIP]
+> Chrome에서 선택하는 `youtube-ai-translator/` 폴더 안에는 바로 `manifest.json` 파일이 보여야 합니다. 다른 상위 폴더를 선택하면 확장이 로드되지 않습니다.
+
+### 소스에서 직접 빌드
 
 ```bash
 git clone https://github.com/your-username/yg-translator.git
@@ -155,7 +172,7 @@ npm run test:coverage    # 핵심 런타임 모듈 coverage 게이트
 
 - YouTube 자막이 제공되는 영상에서만 동작합니다
 - Gemini 할당량 또는 서비스 상태에 따라 `403`, `429`, `503` 오류가 발생할 수 있습니다
-- 설치 시 Chrome 개발자 모드가 필요합니다
+- Chrome Web Store에 등록하지 않은 상태에서는 설치 시 Chrome 개발자 모드가 필요합니다
 
 ## 📄 라이선스
 

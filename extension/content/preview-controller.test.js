@@ -19,5 +19,8 @@ test('preview controller refreshes localized status messages after locale change
   locale = 'ko';
 
   assert.equal(controller.refreshLocalizedStatusMessage(), true);
-  assert.equal(controller.getState().statusMessage, '취소할 활성 작업이 없습니다.');
+  assert.equal(
+    controller.getState().statusMessage,
+    '현재 진행 중인 취소 가능한 작업이 없습니다.',
+  );
 });
